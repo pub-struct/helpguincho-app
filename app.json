@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "meuAppGuincho",
-    "slug": "meuAppGuincho",
+    "name": "HelpGuincho",
+    "slug": "HelpGuincho",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
@@ -9,12 +9,30 @@
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "Precisamos da sua localização para exibir o mapa corretamente.",
+        "ITSAppUsesNonExemptEncryption": false
+      },
+      "bundleIdentifier": "iosconfig",
+      "config": {
+        "googleMapsApiKey": "AIzaSyCgJspzdsVuS5w6P7eAXvzW3e8vCNDcpv0"
+      }
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
+      },
+      "permissions": [
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION"
+      ],
+      "package": "com.anonymous.HelpGuincho",
+      "config": {
+        "googleMaps": {
+          "apiKey": "AIzaSyCgJspzdsVuS5w6P7eAXvzW3e8vCNDcpv0"
+        }
       }
     },
     "web": {
@@ -36,6 +54,14 @@
     ],
     "experiments": {
       "typedRoutes": true
+    },
+    "extra": {
+      "router": {
+        "origin": false
+      },
+      "eas": {
+        "projectId": "60487f9a-a98a-4f0b-810a-b3c0d6f9415d"
+      }
     }
   }
 }

@@ -1,0 +1,1731 @@
+openapi: 3.0.3
+info:
+  title: HelpGuincho API
+  version: 1.0.0
+  description: Private API for HelpGuincho
+paths:
+  /api/v1/auth/login/:
+    post:
+      operationId: v1_auth_login_create
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Login'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Login'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Login'
+        required: true
+      security:
+      - tokenAuth: []
+      - apiKeyHeader: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthSuccess'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+  /api/v1/auth/logout/:
+    post:
+      operationId: v1_auth_logout_create
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AuthSuccess'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/AuthSuccess'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/AuthSuccess'
+        required: true
+      security:
+      - tokenAuth: []
+      - apiKeyHeader: []
+      responses:
+        '204':
+          description: No response body
+  /api/v1/auth/session/:
+    post:
+      operationId: v1_auth_session_create
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AuthSuccess'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/AuthSuccess'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/AuthSuccess'
+        required: true
+      security:
+      - tokenAuth: []
+      - apiKeyHeader: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthSuccess'
+          description: ''
+  /api/v1/enterprise/:
+    get:
+      operationId: v1_enterprise_list
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      tags:
+      - enterprise
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      - apiKeyHeader: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedEnterpriseList'
+          description: ''
+    post:
+      operationId: v1_enterprise_create
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      tags:
+      - enterprise
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Enterprise'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Enterprise'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Enterprise'
+        required: true
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      - apiKeyHeader: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedEnterpriseList'
+          description: ''
+  /api/v1/enterprise/{id}/:
+    get:
+      operationId: v1_enterprise_list_2
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Enterprise.
+        required: true
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      tags:
+      - enterprise
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      - apiKeyHeader: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedEnterpriseList'
+          description: ''
+    put:
+      operationId: v1_enterprise_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Enterprise.
+        required: true
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      tags:
+      - enterprise
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Enterprise'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Enterprise'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Enterprise'
+        required: true
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      - apiKeyHeader: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedEnterpriseList'
+          description: ''
+    patch:
+      operationId: v1_enterprise_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Enterprise.
+        required: true
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      tags:
+      - enterprise
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedEnterprise'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedEnterprise'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedEnterprise'
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      - apiKeyHeader: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedEnterpriseList'
+          description: ''
+    delete:
+      operationId: v1_enterprise_destroy
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Enterprise.
+        required: true
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      tags:
+      - enterprise
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      - apiKeyHeader: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedEnterpriseList'
+          description: ''
+  /api/v1/locations/distance/:
+    get:
+      operationId: v1_locations_distance_list
+      parameters:
+      - in: query
+        name: destination
+        schema:
+          type: string
+        description: destination address
+        required: true
+      - in: query
+        name: origin
+        schema:
+          type: string
+        description: origin address
+        required: true
+      tags:
+      - locations
+      security:
+      - tokenAuth: []
+      - apiKeyHeader: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SuccessResponse'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+  /api/v1/locations/search/:
+    get:
+      operationId: v1_locations_search_list
+      parameters:
+      - in: query
+        name: query
+        schema:
+          type: string
+        description: address query
+        required: true
+      tags:
+      - locations
+      security:
+      - tokenAuth: []
+      - apiKeyHeader: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Geometry'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+  /api/v1/rides/:
+    get:
+      operationId: v1_rides_list
+      description: Ride-related endpoints
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      tags:
+      - Rides
+      security:
+      - tokenAuth: []
+      - apiKeyHeader: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedRideList'
+          description: ''
+    post:
+      operationId: v1_rides_create
+      description: Create a new ride
+      tags:
+      - Rides
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateRides'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/CreateRides'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/CreateRides'
+        required: true
+      security:
+      - tokenAuth: []
+      - apiKeyHeader: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Ride'
+          description: ''
+  /api/v1/rides/{id}/:
+    get:
+      operationId: v1_rides_list_2
+      description: Ride-related endpoints
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this rides.
+        required: true
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      tags:
+      - Rides
+      security:
+      - tokenAuth: []
+      - apiKeyHeader: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedRideList'
+          description: ''
+    put:
+      operationId: v1_rides_update
+      description: Update a ride
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this rides.
+        required: true
+      tags:
+      - Rides
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateRides'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/CreateRides'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/CreateRides'
+        required: true
+      security:
+      - tokenAuth: []
+      - apiKeyHeader: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Ride'
+          description: ''
+    patch:
+      operationId: v1_rides_partial_update
+      description: Ride-related endpoints
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this rides.
+        required: true
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      tags:
+      - Rides
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedRide'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedRide'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedRide'
+      security:
+      - tokenAuth: []
+      - apiKeyHeader: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedRideList'
+          description: ''
+    delete:
+      operationId: v1_rides_destroy
+      description: Ride-related endpoints
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this rides.
+        required: true
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      tags:
+      - Rides
+      security:
+      - tokenAuth: []
+      - apiKeyHeader: []
+      responses:
+        '204':
+          description: No response body
+  /api/v1/rides/get_nearby_drivers/:
+    get:
+      operationId: v1_rides_get_nearby_drivers_retrieve
+      description: Retorna uma lista dos 10 motoristas mais próximos com base na latitude
+        e longitude fornecidas.
+      parameters:
+      - in: query
+        name: latitude
+        schema:
+          type: number
+          format: double
+        description: Latitude do usuário
+        required: true
+      - in: query
+        name: longitude
+        schema:
+          type: number
+          format: double
+        description: Longitude do usuário
+        required: true
+      - in: query
+        name: max_distance_km
+        schema:
+          type: number
+          format: double
+        description: Distância máxima em quilômetros
+      tags:
+      - Rides
+      security:
+      - tokenAuth: []
+      - apiKeyHeader: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedDriverList'
+          description: Lista dos motoristas ordenados por distância
+        '400':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+          description: Erro quando latitude ou longitude não são fornecidas.
+  /api/v1/users/:
+    get:
+      operationId: v1_users_list
+      parameters:
+      - in: query
+        name: email
+        schema:
+          type: string
+        description: Filter by email (case-insensitive, partial match)
+      - in: query
+        name: enterprise
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - in: query
+        name: role
+        schema:
+          type: string
+      - in: query
+        name: username
+        schema:
+          type: string
+      tags:
+      - users
+      security:
+      - tokenAuth: []
+      - apiKeyHeader: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedUserList'
+          description: ''
+    post:
+      operationId: v1_users_create
+      tags:
+      - users
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateUser'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/CreateUser'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/CreateUser'
+        required: true
+      security:
+      - tokenAuth: []
+      - apiKeyHeader: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+          description: ''
+  /api/v1/users/{id}/:
+    get:
+      operationId: v1_users_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this user.
+        required: true
+      tags:
+      - users
+      security:
+      - tokenAuth: []
+      - apiKeyHeader: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+          description: ''
+    put:
+      operationId: v1_users_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this user.
+        required: true
+      tags:
+      - users
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/User'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/User'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/User'
+        required: true
+      security:
+      - tokenAuth: []
+      - apiKeyHeader: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+          description: ''
+    patch:
+      operationId: v1_users_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this user.
+        required: true
+      tags:
+      - users
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedUser'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedUser'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedUser'
+      security:
+      - tokenAuth: []
+      - apiKeyHeader: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+          description: ''
+    delete:
+      operationId: v1_users_destroy
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this user.
+        required: true
+      tags:
+      - users
+      security:
+      - tokenAuth: []
+      - apiKeyHeader: []
+      responses:
+        '204':
+          description: No response body
+components:
+  schemas:
+    AuthSuccess:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        token:
+          type: string
+          readOnly: true
+        enterprise:
+          allOf:
+          - $ref: '#/components/schemas/Enterprise'
+          readOnly: true
+        vehicle:
+          allOf:
+          - $ref: '#/components/schemas/Vehicle'
+          readOnly: true
+        last_login:
+          type: string
+          format: date-time
+          nullable: true
+        first_name:
+          type: string
+          maxLength: 150
+        last_name:
+          type: string
+          maxLength: 150
+        date_joined:
+          type: string
+          format: date-time
+        username:
+          type: string
+          description: Required. 120 characters or fewer. Letters,         numbers
+            and @/./+/-/_ characters
+          maxLength: 120
+        latitude:
+          type: number
+          format: double
+        longitude:
+          type: number
+          format: double
+        full_name:
+          type: string
+          title: Nome Completo
+          maxLength: 150
+        role:
+          $ref: '#/components/schemas/RoleEnum'
+        email:
+          type: string
+          format: email
+          title: E-mail
+          maxLength: 255
+        document:
+          type: string
+          title: Documento
+          maxLength: 50
+        cnh:
+          type: string
+          maxLength: 50
+        is_active:
+          type: boolean
+          title: Ativo
+        phone:
+          type: string
+          title: Telefone
+          maxLength: 50
+      required:
+      - cnh
+      - document
+      - email
+      - enterprise
+      - full_name
+      - id
+      - phone
+      - token
+      - username
+      - vehicle
+    Bounds:
+      type: object
+      properties:
+        northeast:
+          $ref: '#/components/schemas/Location'
+        southwest:
+          $ref: '#/components/schemas/Location'
+      required:
+      - northeast
+      - southwest
+    CreateRides:
+      type: object
+      properties:
+        pickup_location:
+          type: string
+          description: The pickup location of the ride, will be filled by the admins
+          maxLength: 400
+        delivery_address:
+          type: string
+          description: The delivery address of the ride, will be filled by the admins
+          maxLength: 400
+        client:
+          $ref: '#/components/schemas/RideClient'
+        driver:
+          type: integer
+          description: The driver of the ride, need to be a user with the role 'driver'
+        status:
+          allOf:
+          - $ref: '#/components/schemas/StatusEnum'
+          description: |-
+            The status of the ride, only update if the ride recives a update or the client cancels it
+
+            * `pending` - Pending
+            * `accepted` - Accepted
+            * `rejected` - Rejected
+            * `completed` - Completed
+            * `cancelled` - Cancelled
+        description:
+          type: string
+          description: Description of the ride, the reason for the ride
+          maxLength: 500
+        driver_lat:
+          type: number
+          format: double
+          description: The latitude of the driver location
+        driver_long:
+          type: number
+          format: double
+          description: The longitude of the driver location
+        pickup_time:
+          type: string
+          format: date-time
+          nullable: true
+          description: The pickup time of the ride, will be filled by the admins
+        delivery_time:
+          type: string
+          format: date-time
+          nullable: true
+          description: The delivery time of the ride, will be filled by the admins
+        pickup_lat:
+          type: number
+          format: double
+          description: The latitude of the pickup location
+        pickup_long:
+          type: number
+          format: double
+          description: The longitude of the pickup location
+        delivery_lat:
+          type: number
+          format: double
+          description: The latitude of the delivery location
+        delivery_long:
+          type: number
+          format: double
+          description: The longitude of the delivery location
+      required:
+      - client
+      - delivery_address
+      - description
+      - driver
+      - pickup_location
+      - status
+    CreateUser:
+      type: object
+      properties:
+        username:
+          type: string
+          description: Required. 120 characters or fewer. Letters,         numbers
+            and @/./+/-/_ characters
+          maxLength: 120
+        full_name:
+          type: string
+          title: Nome Completo
+          maxLength: 150
+        role:
+          $ref: '#/components/schemas/RoleEnum'
+        email:
+          type: string
+          format: email
+          title: E-mail
+          maxLength: 255
+        document:
+          type: string
+          title: Documento
+          maxLength: 50
+        cnh:
+          type: string
+          maxLength: 50
+        enterprise:
+          type: integer
+          nullable: true
+          title: Empresa
+        phone:
+          type: string
+          title: Telefone
+          maxLength: 50
+        vehicle:
+          $ref: '#/components/schemas/Vehicle'
+      required:
+      - cnh
+      - document
+      - email
+      - full_name
+      - phone
+      - username
+      - vehicle
+    Driver:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        username:
+          type: string
+          description: Required. 120 characters or fewer. Letters,         numbers
+            and @/./+/-/_ characters
+          maxLength: 120
+        latitude:
+          type: number
+          format: double
+        longitude:
+          type: number
+          format: double
+        distance_km:
+          type: number
+          format: double
+      required:
+      - distance_km
+      - id
+      - username
+    Enterprise:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+          maxLength: 255
+        description:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+        is_active:
+          type: boolean
+        km_base_price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+        km_price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+      required:
+      - created_at
+      - description
+      - id
+      - name
+      - updated_at
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+          maxLength: 255
+      required:
+      - error
+    Geometry:
+      type: object
+      properties:
+        bounds:
+          $ref: '#/components/schemas/Bounds'
+        location:
+          $ref: '#/components/schemas/Location'
+        location_type:
+          type: string
+        viewport:
+          $ref: '#/components/schemas/Viewport'
+      required:
+      - bounds
+      - location
+      - location_type
+      - viewport
+    Location:
+      type: object
+      properties:
+        lat:
+          type: number
+          format: double
+        lng:
+          type: number
+          format: double
+      required:
+      - lat
+      - lng
+    Login:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+      required:
+      - email
+      - password
+    PaginatedDriverList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Driver'
+    PaginatedEnterpriseList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Enterprise'
+    PaginatedRideList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Ride'
+    PaginatedUserList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/User'
+    PatchedEnterprise:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+          maxLength: 255
+        description:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+        is_active:
+          type: boolean
+        km_base_price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+        km_price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+    PatchedRide:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        driver:
+          allOf:
+          - $ref: '#/components/schemas/SafeUser'
+          readOnly: true
+        client:
+          allOf:
+          - $ref: '#/components/schemas/RideClient'
+          readOnly: true
+        description:
+          type: string
+          description: Description of the ride, the reason for the ride
+          maxLength: 500
+        status:
+          allOf:
+          - $ref: '#/components/schemas/StatusEnum'
+          description: |-
+            The status of the ride, only update if the ride recives a update or the client cancels it
+
+            * `pending` - Pending
+            * `accepted` - Accepted
+            * `rejected` - Rejected
+            * `completed` - Completed
+            * `cancelled` - Cancelled
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+        completed_at:
+          type: string
+          format: date-time
+          nullable: true
+          description: The time when the ride was completed
+        pickup_location:
+          type: string
+          description: The pickup location of the ride, will be filled by the admins
+          maxLength: 400
+        pickup_lat:
+          type: number
+          format: double
+          description: The latitude of the pickup location
+        pickup_long:
+          type: number
+          format: double
+          description: The longitude of the pickup location
+        delivery_address:
+          type: string
+          description: The delivery address of the ride, will be filled by the admins
+          maxLength: 400
+        delivery_lat:
+          type: number
+          format: double
+          description: The latitude of the delivery location
+        delivery_long:
+          type: number
+          format: double
+          description: The longitude of the delivery location
+        driver_lat:
+          type: number
+          format: double
+          description: The latitude of the driver location
+        driver_long:
+          type: number
+          format: double
+          description: The longitude of the driver location
+        pickup_time:
+          type: string
+          format: date-time
+          nullable: true
+          description: The pickup time of the ride, will be filled by the admins
+        delivery_time:
+          type: string
+          format: date-time
+          nullable: true
+          description: The delivery time of the ride, will be filled by the admins
+        price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+          nullable: true
+          description: The price of the ride
+        pictures:
+          type: array
+          items:
+            type: integer
+          description: Pictures of the ride, only will be filed when the driver reaches
+            the pickup location
+    PatchedUser:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        vehicle:
+          $ref: '#/components/schemas/Vehicle'
+        enterprise:
+          $ref: '#/components/schemas/Enterprise'
+        last_login:
+          type: string
+          format: date-time
+          nullable: true
+        date_joined:
+          type: string
+          format: date-time
+        username:
+          type: string
+          description: Required. 120 characters or fewer. Letters,         numbers
+            and @/./+/-/_ characters
+          maxLength: 120
+        latitude:
+          type: number
+          format: double
+        longitude:
+          type: number
+          format: double
+        full_name:
+          type: string
+          title: Nome Completo
+          maxLength: 150
+        role:
+          $ref: '#/components/schemas/RoleEnum'
+        email:
+          type: string
+          format: email
+          title: E-mail
+          maxLength: 255
+        document:
+          type: string
+          title: Documento
+          maxLength: 50
+        cnh:
+          type: string
+          maxLength: 50
+        phone:
+          type: string
+          title: Telefone
+          maxLength: 50
+    Ride:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        driver:
+          allOf:
+          - $ref: '#/components/schemas/SafeUser'
+          readOnly: true
+        client:
+          allOf:
+          - $ref: '#/components/schemas/RideClient'
+          readOnly: true
+        description:
+          type: string
+          description: Description of the ride, the reason for the ride
+          maxLength: 500
+        status:
+          allOf:
+          - $ref: '#/components/schemas/StatusEnum'
+          description: |-
+            The status of the ride, only update if the ride recives a update or the client cancels it
+
+            * `pending` - Pending
+            * `accepted` - Accepted
+            * `rejected` - Rejected
+            * `completed` - Completed
+            * `cancelled` - Cancelled
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+        completed_at:
+          type: string
+          format: date-time
+          nullable: true
+          description: The time when the ride was completed
+        pickup_location:
+          type: string
+          description: The pickup location of the ride, will be filled by the admins
+          maxLength: 400
+        pickup_lat:
+          type: number
+          format: double
+          description: The latitude of the pickup location
+        pickup_long:
+          type: number
+          format: double
+          description: The longitude of the pickup location
+        delivery_address:
+          type: string
+          description: The delivery address of the ride, will be filled by the admins
+          maxLength: 400
+        delivery_lat:
+          type: number
+          format: double
+          description: The latitude of the delivery location
+        delivery_long:
+          type: number
+          format: double
+          description: The longitude of the delivery location
+        driver_lat:
+          type: number
+          format: double
+          description: The latitude of the driver location
+        driver_long:
+          type: number
+          format: double
+          description: The longitude of the driver location
+        pickup_time:
+          type: string
+          format: date-time
+          nullable: true
+          description: The pickup time of the ride, will be filled by the admins
+        delivery_time:
+          type: string
+          format: date-time
+          nullable: true
+          description: The delivery time of the ride, will be filled by the admins
+        price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+          nullable: true
+          description: The price of the ride
+        pictures:
+          type: array
+          items:
+            type: integer
+          description: Pictures of the ride, only will be filed when the driver reaches
+            the pickup location
+      required:
+      - client
+      - created_at
+      - delivery_address
+      - description
+      - driver
+      - id
+      - pickup_location
+      - status
+      - updated_at
+    RideClient:
+      type: object
+      properties:
+        full_name:
+          type: string
+          description: Client full name, can be used to identify the client
+          maxLength: 100
+        vehicle:
+          type: string
+          description: Vehicle type, can be used to identify the client
+          maxLength: 100
+        plate:
+          type: string
+          description: Vehicle plate, can be used to identify the client
+          maxLength: 100
+      required:
+      - full_name
+      - plate
+      - vehicle
+    RoleEnum:
+      enum:
+      - admin
+      - driver
+      - staff
+      type: string
+      description: |-
+        * `admin` - Admin
+        * `driver` - Driver
+        * `staff` - Staff
+    SafeUser:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        vehicle:
+          $ref: '#/components/schemas/Vehicle'
+        date_joined:
+          type: string
+          format: date-time
+        username:
+          type: string
+          description: Required. 120 characters or fewer. Letters,         numbers
+            and @/./+/-/_ characters
+          maxLength: 120
+        latitude:
+          type: number
+          format: double
+        longitude:
+          type: number
+          format: double
+        full_name:
+          type: string
+          title: Nome Completo
+          maxLength: 150
+        role:
+          $ref: '#/components/schemas/RoleEnum'
+        email:
+          type: string
+          format: email
+          title: E-mail
+          maxLength: 255
+        document:
+          type: string
+          title: Documento
+          maxLength: 50
+        cnh:
+          type: string
+          maxLength: 50
+        phone:
+          type: string
+          title: Telefone
+          maxLength: 50
+        enterprise:
+          type: integer
+          nullable: true
+          title: Empresa
+      required:
+      - cnh
+      - document
+      - email
+      - full_name
+      - id
+      - phone
+      - username
+      - vehicle
+    StatusEnum:
+      enum:
+      - pending
+      - accepted
+      - rejected
+      - completed
+      - cancelled
+      type: string
+      description: |-
+        * `pending` - Pending
+        * `accepted` - Accepted
+        * `rejected` - Rejected
+        * `completed` - Completed
+        * `cancelled` - Cancelled
+    SuccessResponse:
+      type: object
+      properties:
+        message:
+          type: string
+          maxLength: 255
+      required:
+      - message
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        vehicle:
+          $ref: '#/components/schemas/Vehicle'
+        enterprise:
+          $ref: '#/components/schemas/Enterprise'
+        last_login:
+          type: string
+          format: date-time
+          nullable: true
+        date_joined:
+          type: string
+          format: date-time
+        username:
+          type: string
+          description: Required. 120 characters or fewer. Letters,         numbers
+            and @/./+/-/_ characters
+          maxLength: 120
+        latitude:
+          type: number
+          format: double
+        longitude:
+          type: number
+          format: double
+        full_name:
+          type: string
+          title: Nome Completo
+          maxLength: 150
+        role:
+          $ref: '#/components/schemas/RoleEnum'
+        email:
+          type: string
+          format: email
+          title: E-mail
+          maxLength: 255
+        document:
+          type: string
+          title: Documento
+          maxLength: 50
+        cnh:
+          type: string
+          maxLength: 50
+        phone:
+          type: string
+          title: Telefone
+          maxLength: 50
+      required:
+      - cnh
+      - document
+      - email
+      - enterprise
+      - full_name
+      - id
+      - phone
+      - username
+      - vehicle
+    Vehicle:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        brand:
+          type: string
+          maxLength: 255
+        model:
+          type: string
+          maxLength: 255
+        year:
+          type: string
+          maxLength: 4
+        plate:
+          type: string
+          maxLength: 255
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+        is_active:
+          type: boolean
+      required:
+      - brand
+      - created_at
+      - id
+      - model
+      - plate
+      - updated_at
+      - year
+    Viewport:
+      type: object
+      properties:
+        northeast:
+          $ref: '#/components/schemas/Location'
+        southwest:
+          $ref: '#/components/schemas/Location'
+      required:
+      - northeast
+      - southwest
+  securitySchemes:
+    basicAuth:
+      type: http
+      scheme: basic
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: sessionid
+    tokenAuth:
+      type: apiKey
+      in: header
+      name: Authorization
+      description: Token-based authentication with required prefix "Token"
+servers:
+- url: http://localhost:8000
+  description: Local server
+- url: https://api.helpguincho.com
+  description: Production Server
+- url: https://api-stage.helpguincho.com
+  description: Development Server
