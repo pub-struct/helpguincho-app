@@ -11,11 +11,11 @@ export default function LoginScreen() {
   const themeColors = colors[colorScheme || 'light']; // Define as cores com base no tema
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const router = useRouter(); // Hook para navegação do Expo Router
+  const router = useRouter(); // Hook navegação do Expo Router
 
   const handleLogin = async () => {
     try {
-      const response = await axios.post('http://localhost:8000/api/v1/auth/login/', {
+      const response = await axios.post('https://api.help-guincho.co/api/v1/auth/login/', {
         email: email,
         password: password,
       }, {
@@ -24,14 +24,14 @@ export default function LoginScreen() {
         },
       });
 
-      // Se o login for bem-sucedido, salve o token no AsyncStorage
-      const token = response.data.token; // Supondo que o token seja retornado como `token`
+      // login for bem sucedido, token no AsyncStorage.
+      const token = response.data.token; 
       await AsyncStorage.setItem('token', token);
 
       console.log('Login bem-sucedido:', response.data);
 
-      // Redirecionar para a tela Home usando o Expo Router
-      router.replace('/HomeScreen'); // Use replace para evitar que o usuário volte para a tela de login
+      // redirecionar para a tela Home com expo
+      router.replace('/HomeScreen'); // replace para evitar que o usuário volte para a tela de login
     } catch (error) {
       console.error('Erro ao fazer login:', error);
       Alert.alert('Erro', 'Erro ao fazer login. Verifique suas credenciais.');

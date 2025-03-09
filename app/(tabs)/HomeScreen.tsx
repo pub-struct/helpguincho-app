@@ -7,21 +7,44 @@ import {
   Dimensions,
   ScrollView,
   Image,
-  ImageBackground,
+  Alert,
 } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import MapView, { Marker, Polyline } from 'react-native-maps';
+import MapView, { Marker } from 'react-native-maps';
 import BottomSheet, { BottomSheetView } from '@gorhom/bottom-sheet';
 import { useRouter } from 'expo-router';
 import * as Location from 'expo-location';
 import io from 'socket.io-client';
 import MapViewDirections from 'react-native-maps-directions';
 import { Drawer } from 'react-native-drawer-layout';
-import { BlurView } from 'expo-blur'; // Adicione esta biblioteca para o efeito de desfoque
+import { BlurView } from 'expo-blur';
+import axios from 'axios';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 interface UserLocation {
   latitude: number;
   longitude: number;
+}
+
+interface UserData {
+  cnh: string;
+  date_joined: string;
+  document: string;
+  email: string;
+  enterprise: any;
+  first_name: string;
+  full_name: string;
+  id: number;
+  is_active: boolean;
+  last_login: string | null;
+  last_name: string;
+  latitude: number;
+  longitude: number;
+  phone: string;
+  role: string;
+  token: string;
+  username: string;
+  vehicle: any;
 }
 
 const { width, height } = Dimensions.get('window');
@@ -36,12 +59,14 @@ export default function HomeScreen() {
   const [initialLocation, setInitialLocation] = useState<UserLocation | null>(null);
   const [corrida, setCorrida] = useState<any>(null);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const [userData, setUserData] = useState<UserData | null>(null);
 
   // -- BOTTOM SHEET --
   const bottomSheetRef = useRef<BottomSheet>(null);
-  const snapPoints = useMemo(() => ['25%', '50%'], []);
+  const snapPoints = useMemo(() => ['25%', '80%'], []);
   const [sheetContent, setSheetContent] = useState<'initial' | 'conta' | 'historico'>('initial');
 
+  // Funções para controlar o Bottom Sheet
   const openSheet = (mode: 'conta' | 'historico') => {
     setSheetContent(mode);
     bottomSheetRef.current?.snapToIndex(1);
@@ -67,7 +92,6 @@ export default function HomeScreen() {
       if (!initialLocation) {
         setInitialLocation(currentLoc);
       }
-
       const subscription = await Location.watchPositionAsync(
         { accuracy: Location.Accuracy.High, distanceInterval: 10 },
         (loc) => {
@@ -81,55 +105,89 @@ export default function HomeScreen() {
 
   // -- WEBSOCKET --
   useEffect(() => {
-    const socket = io('https://api.helpguincho.com');
-
+    const socket = io('https://api.helpguincho.co');
     socket.on('nova_corrida', (data: any) => {
       setCorrida(data);
     });
-
     return () => {
       socket.disconnect();
     };
   }, []);
 
+  // -- CARREGAR DADOS DO USUÁRIO --
+  useEffect(() => {
+    const loadUserData = async () => {
+      const token = await AsyncStorage.getItem('token');
+      if (token) {
+        try {
+          const response = await axios.get('https://api.help-guincho.co/api/v1/auth/me/', {
+            headers: { Authorization: `Token ${token}` },
+          });
+          setUserData(response.data);
+        } catch (error) {
+          console.error('Erro ao carregar dados do usuário:', error);
+        }
+      }
+    };
+    loadUserData();
+  }, []);
+
   // -- FUNÇÃO DE LOGOUT --
   const handleLogout = async () => {
-    router.replace('/LoginScreen');
+    try {
+      const token = await AsyncStorage.getItem('token');
+      if (token) {
+        await axios.post(
+          'https://api.help-guincho.co/api/v1/auth/logout/',
+          {
+            last_login: null,
+            first_name: '',
+            last_name: '',
+            date_joined: '',
+            username: '',
+            latitude: 1,
+            longitude: 1,
+            full_name: '',
+            role: 'admin',
+            email: '',
+            document: '',
+            cnh: '',
+            is_active: true,
+            phone: '',
+          },
+          {
+            headers: {
+              Authorization: `Token ${token}`,
+              'Content-Type': 'application/json',
+            },
+          }
+        );
+        await AsyncStorage.removeItem('token');
+        router.replace('/LoginScreen');
+      }
+    } catch (error) {
+      console.error('Erro ao fazer logout:', error);
+    }
   };
 
-  // Renderiza o conteúdo do bottom sheet
+  // Renderiza o conteúdo do Bottom Sheet
   const renderSheetContent = () => {
     switch (sheetContent) {
       case 'initial':
         return (
           <View style={styles.sheetContentContainer}>
-            
             <View style={styles.optionButtonsContainer}>
-              <TouchableOpacity
-                style={styles.optionButton}
-                onPress={() => openSheet('historico')}
-              >
-                <Image
-                  source={require('@/assets/images/historico.png')} // Ícone do histórico
-                  style={styles.optionIcon}
-                />
+              <TouchableOpacity style={styles.optionButton} onPress={() => openSheet('historico')}>
+                <Image source={require('@/assets/images/historico.png')} style={styles.optionIcon} />
                 <Text style={styles.optionButtonText}>Histórico</Text>
               </TouchableOpacity>
-
-              <TouchableOpacity
-                style={styles.optionButton}
-                onPress={() => openSheet('conta')}
-              >
-                <Image
-                  source={require('@/assets/images/account.png')} // Ícone da conta
-                  style={styles.optionIcon}
-                />
+              <TouchableOpacity style={styles.optionButton} onPress={() => openSheet('conta')}>
+                <Image source={require('@/assets/images/account.png')} style={styles.optionIcon} />
                 <Text style={styles.optionButtonText}>Conta</Text>
               </TouchableOpacity>
             </View>
           </View>
         );
-
       case 'conta':
         return (
           <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingHorizontal: 20 }}>
@@ -139,56 +197,44 @@ export default function HomeScreen() {
                 <Text style={styles.sheetBackButton}>Voltar</Text>
               </TouchableOpacity>
             </View>
-
             <Text style={styles.sectionTitle}>Informações pessoais</Text>
             <View style={styles.infoContainer}>
               <Text style={styles.label}>Nome</Text>
-              <Text style={styles.value}>Samuel Pinheiro</Text>
-
+              <Text style={styles.value}>{userData?.full_name || 'N/A'}</Text>
               <Text style={styles.label}>E-mail</Text>
-              <Text style={styles.value}>email@gmail.com</Text>
+              <Text style={styles.value}>{userData?.email || 'N/A'}</Text>
+              <Text style={styles.label}>Telefone</Text>
+              <Text style={styles.value}>{userData?.phone || 'N/A'}</Text>
+              <Text style={styles.label}>Senha</Text>
+              <Text style={styles.value}>**********</Text>
             </View>
-
             <Text style={styles.sectionTitle}>Guincho</Text>
             <View style={styles.infoContainer}>
-              <Text style={styles.label}>Cor</Text>
-              <Text style={styles.value}>Branco</Text>
-
-              <Text style={styles.label}>Placa</Text>
-              <Text style={styles.value}>123-CNH</Text>
-
               <Text style={styles.label}>Modelo</Text>
-              <Text style={styles.value}>
-                Volkswagen VW 13160 4x2 Plataforma Guincho 2018
-              </Text>
+              <Text style={styles.value}>{userData?.vehicle?.model || 'N/A'}</Text>
+              <Text style={styles.label}>Placa</Text>
+              <Text style={styles.value}>{userData?.vehicle?.plate || 'N/A'}</Text>
+              <Text style={styles.label}>Cor</Text>
+              <Text style={styles.value}>{userData?.vehicle?.color || 'N/A'}</Text>
             </View>
           </ScrollView>
         );
-
       case 'historico':
         return (
-          <View style={{ flex: 1 }}>
+          <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingHorizontal: 20 }}>
             <View style={styles.sheetHeader}>
               <Text style={styles.sheetTitle}>Histórico</Text>
               <TouchableOpacity onPress={goBackToInitial}>
                 <Text style={styles.sheetBackButton}>Voltar</Text>
               </TouchableOpacity>
             </View>
-
-            <ScrollView
-              style={{ flex: 1, paddingHorizontal: 20 }}
-              contentContainerStyle={{ paddingBottom: 20 }}
-            >
-              {/* Exemplo de itens do histórico */}
+            <ScrollView style={{ flex: 1, paddingHorizontal: 20 }} contentContainerStyle={{ paddingBottom: 20 }}>
               <View style={styles.historicoItem}>
                 <Text style={styles.historicoData}>29/01/2025 16:53</Text>
                 <Text style={styles.historicoInfo}>R$ 150,00 | Finalizado</Text>
-                <Text style={styles.historicoInfo}>
-                  55, rua chorada, São Paulo-SP
-                </Text>
+                <Text style={styles.historicoInfo}>55, rua X, São Paulo-SP</Text>
                 <Text style={styles.historicoInfo}>Tipo de veículo: Moto</Text>
               </View>
-
               <View style={styles.historicoItem}>
                 <Text style={styles.historicoData}>29/01/2025 16:53</Text>
                 <Text style={styles.historicoInfo}>R$ 250,00 | Finalizado</Text>
@@ -196,8 +242,10 @@ export default function HomeScreen() {
                 <Text style={styles.historicoInfo}>Tipo de veículo: Carro</Text>
               </View>
             </ScrollView>
-          </View>
+          </ScrollView>
         );
+      default:
+        return null;
     }
   };
 
@@ -220,7 +268,6 @@ export default function HomeScreen() {
       )}
     >
       <GestureHandlerRootView style={styles.container}>
-        {/* Mapa */}
         {initialLocation && (
           <MapView
             style={styles.map}
@@ -231,27 +278,16 @@ export default function HomeScreen() {
               longitudeDelta: 0.0421,
             }}
           >
-            {/* Indicador de localização real do usuário */}
             {userLocation && (
-              <Marker
-                coordinate={userLocation}
-                title="Você está aqui"
-              >
-                <Image
-                  source={require('@/assets/images/user-location.png')}
-                  style={{ width: 30, height: 30 }}
-                />
+              <Marker coordinate={userLocation} title="Você está aqui">
+                <Image source={require('@/assets/images/user-location.png')} style={{ width: 30, height: 30 }} />
               </Marker>
             )}
-
-            {/* Rota da corrida */}
             {corrida && (
               <MapViewDirections
                 origin={{ latitude: corrida.driver_lat, longitude: corrida.driver_long }}
                 destination={{ latitude: corrida.delivery_lat, longitude: corrida.delivery_long }}
-                waypoints={[
-                  { latitude: corrida.pickup_lat, longitude: corrida.pickup_long },
-                ]}
+                waypoints={[{ latitude: corrida.pickup_lat, longitude: corrida.pickup_long }]}
                 apikey={GOOGLE_MAPS_API_KEY}
                 strokeWidth={4}
                 strokeColor="hotpink"
@@ -260,69 +296,63 @@ export default function HomeScreen() {
           </MapView>
         )}
 
-        {/* Novo Header */}
         <View style={styles.newHeader}>
-          <TouchableOpacity
-            style={styles.menuButton}
-            onPress={() => setIsDrawerOpen(true)}
-          >
+          <TouchableOpacity style={styles.menuButton} onPress={() => setIsDrawerOpen(true)}>
             <Text style={styles.menuIcon}>☰</Text>
           </TouchableOpacity>
           <View style={styles.welcomeContainer}>
-            <Text style={styles.welcomeText}>Bem-vindo, Usuário</Text>
+            <Text style={styles.welcomeText}>Bem-vindo, {userData?.full_name || 'Usuário'}</Text>
           </View>
         </View>
 
-        {/* Caixa de status (ao centro) */}
-        <BlurView intensity={20} style={styles.statusBox}>
-          <Text style={styles.statusTitle}>
-            Você está{' '}
-            <Text style={{ color: disponivel ? '#2ecc71' : '#e74c3c' }}>
-              {disponivel ? 'ON' : 'OFF'}
+        {sheetContent === 'initial' && (
+          <BlurView intensity={40} style={styles.statusBox}>
+            <Text style={styles.statusTitle}>
+              Você está{' '}
+              <Text style={{ color: disponivel ? '#2ecc71' : '#e74c3c' }}>
+                {disponivel ? 'ON' : 'OFF'}
+              </Text>
             </Text>
-          </Text>
-          <Text style={styles.statusSubtitle}>Guinchos feitos hoje: X</Text>
-          <Text style={styles.statusDesc}>
-            {disponivel
-              ? 'Você está disponível para receber chamados!'
-              : 'Buscaremos serviço de guinchos assim que ficar online.'}
-          </Text>
+            <Text style={styles.statusSubtitle}>Guinchos feitos hoje: X</Text>
+            <Text style={styles.statusDesc}>
+              {disponivel
+                ? 'Você está disponível para receber chamados!'
+                : 'Buscaremos serviço de guinchos assim que ficar online.'}
+            </Text>
+            <TouchableOpacity
+              style={[styles.statusButton, { backgroundColor: disponivel ? '#333' : '#FFC107' }]}
+              onPress={() => setDisponivel(!disponivel)}
+            >
+              <Text style={[styles.statusButtonText, { color: disponivel ? '#fff' : '#000' }]}>
+                {disponivel ? 'Ficar OFF' : 'Estou pronto pra trabalhar'}
+              </Text>
+            </TouchableOpacity>
+          </BlurView>
+        )}
 
-          <TouchableOpacity
-            style={[
-              styles.statusButton,
-              { backgroundColor: disponivel ? '#333' : '#FFC107' },
-            ]}
-            onPress={() => setDisponivel(!disponivel)}
+        {/* Container absoluto para o Bottom Sheet com altura definida */}
+        <View style={styles.bottomSheetContainer} pointerEvents="box-none">
+          <BottomSheet
+            ref={bottomSheetRef}
+            snapPoints={snapPoints}
+            enablePanDownToClose={false}
+            index={0}
+            backgroundStyle={styles.sheetBackground}
+            handleIndicatorStyle={{ backgroundColor: '#ccc' }}
           >
-            <Text style={[styles.statusButtonText, { color: disponivel ? '#fff' : '#000' }]}>
-              {disponivel ? 'Ficar OFF' : 'Estou pronto pra trabalhar'}
-            </Text>
-          </TouchableOpacity>
-        </BlurView>
-
-        {/* Bottom Sheet */}
-        <BottomSheet
-          ref={bottomSheetRef}
-          snapPoints={snapPoints}
-          enablePanDownToClose={false}
-          index={0}
-          backgroundStyle={styles.sheetBackground}
-          handleIndicatorStyle={{ backgroundColor: '#ccc' }}
-          style={styles.bottomSheet}
-        >
-          <BottomSheetView style={{ flex: 1 }}>{renderSheetContent()}</BottomSheetView>
-        </BottomSheet>
+            <BottomSheetView style={{ flex: 1 }}>{renderSheetContent()}</BottomSheetView>
+          </BottomSheet>
+        </View>
       </GestureHandlerRootView>
     </Drawer>
   );
 }
 
-// Estilos
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#000',
+    position: 'relative',
   },
   map: {
     flex: 1,
@@ -365,8 +395,8 @@ const styles = StyleSheet.create({
     width: '90%',
     borderRadius: 10,
     padding: 16,
-    zIndex: 10,
-    overflow: 'hidden', // Para aplicar o efeito de desfoque corretamente
+    zIndex: 2,
+    overflow: 'hidden',
   },
   statusTitle: {
     fontSize: 18,
@@ -480,8 +510,13 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: '#555',
   },
-  bottomSheet: {
-    zIndex: 100,
+  bottomSheetContainer: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: height,
+    zIndex: 1000,
   },
   drawerContainer: {
     height: height * 0.5,
