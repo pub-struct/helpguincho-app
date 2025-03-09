@@ -105,13 +105,32 @@ export default function HomeScreen() {
 
   // -- WEBSOCKET --
   useEffect(() => {
-    const socket = io('https://api.helpguincho.co');
-    socket.on('nova_corrida', (data: any) => {
-      setCorrida(data);
-    });
-    return () => {
-      socket.disconnect();
+    const connectWebSocket = async () => {
+      const token = await AsyncStorage.getItem('token');
+      if (!token) {
+        console.warn('Token não encontrado!');
+        return;
+      }
+
+      // Conectar ao WebSocket passando o token na query string
+      const socket = io('https://api.helpguincho.co', {
+        query: { token },
+        transports: ['websocket'], // Garante que a conexão seja via WebSocket
+      });
+
+      // Ouvir o evento correto (ride)
+      socket.on('ride', (data) => {
+        console.log('Nova corrida recebida:', data);
+        setCorrida(data);
+      });
+
+      // Desconectar ao desmontar o componente
+      return () => {
+        socket.disconnect();
+      };
     };
+
+    connectWebSocket();
   }, []);
 
   // -- CARREGAR DADOS DO USUÁRIO --
