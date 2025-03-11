@@ -20,6 +20,7 @@ import { Drawer } from 'react-native-drawer-layout';
 import { BlurView } from 'expo-blur';
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { socketIOClient } from '../../src/utils/socketClient';
 
 interface UserLocation {
   latitude: number;
@@ -57,9 +58,10 @@ export default function HomeScreen() {
   const [disponivel, setDisponivel] = useState(false);
   const [userLocation, setUserLocation] = useState<UserLocation | null>(null);
   const [initialLocation, setInitialLocation] = useState<UserLocation | null>(null);
-  const [corrida, setCorrida] = useState<any>(null);
+  const [corrida, setCorrida] = useState<any>(false);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [userData, setUserData] = useState<UserData | null>(null);
+  const [showCorrida, setShowCorrida] = useState(false);
 
   // -- BOTTOM SHEET --
   const bottomSheetRef = useRef<BottomSheet>(null);
@@ -112,6 +114,7 @@ export default function HomeScreen() {
         return;
       }
 
+<<<<<<< HEAD
       // Conectar ao WebSocket passando o token na query string
       const socket = io('https://api.helpguincho.co', {
         query: { token },
@@ -122,6 +125,23 @@ export default function HomeScreen() {
       socket.on('ride', (data) => {
         console.log('Nova corrida recebida:', data);
         setCorrida(data);
+=======
+      // Usar a função socketIOClient para criar a conexão
+      const socket = socketIOClient(token);
+
+      socket.on('connect', () => {
+        console.log('Conectado ao WebSocket');
+      });
+
+      socket.on('ride', (data) => {
+        console.log('Nova corrida recebida:', data);
+        setCorrida(data);
+        setShowCorrida(true);
+      });
+
+      socket.on('disconnect', () => {
+        console.log('Desconectado do WebSocket');
+>>>>>>> 8c8ff07 (configuração websocket)
       });
 
       // Desconectar ao desmontar o componente
@@ -132,6 +152,32 @@ export default function HomeScreen() {
 
     connectWebSocket();
   }, []);
+  
+
+  const renderCorrida = () => {
+    if (!showCorrida || !corrida) return null;
+  
+    return (
+      <View style={styles.corridaContainer}>
+        <Text style={styles.corridaTitle}>Nova Corrida</Text>
+        <Text style={styles.corridaText}>Cliente: {corrida.client.full_name}</Text>
+        <Text style={styles.corridaText}>Veículo: {corrida.client.vehicle}</Text>
+        <Text style={styles.corridaText}>Placa: {corrida.client.plate}</Text>
+        <Text style={styles.corridaText}>Local de coleta: {corrida.pickup_location}</Text>
+        <Text style={styles.corridaText}>Local de entrega: {corrida.delivery_address}</Text>
+        <Text style={styles.corridaText}>Descrição: {corrida.description}</Text>
+        <Text style={styles.corridaText}>Preço: R$ {corrida.price}</Text>
+        <View style={styles.corridaButtonsContainer}>
+          <TouchableOpacity style={styles.corridaButton} onPress={() => setShowCorrida(false)}>
+            <Text style={styles.corridaButtonText}>Recusar</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={[styles.corridaButton, { backgroundColor: '#2ecc71' }]} onPress={() => setShowCorrida(false)}>
+            <Text style={styles.corridaButtonText}>Aceitar</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    );
+  };
 
   // -- CARREGAR DADOS DO USUÁRIO --
   useEffect(() => {
@@ -349,6 +395,8 @@ export default function HomeScreen() {
           </BlurView>
         )}
 
+        {renderCorrida()}
+
         {/* Container absoluto para o Bottom Sheet com altura definida */}
         <View style={styles.bottomSheetContainer} pointerEvents="box-none">
           <BottomSheet
@@ -372,6 +420,46 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#000',
     position: 'relative',
+  },
+  corridaContainer: {
+    position: 'absolute',
+    bottom: 120,
+    left: 20,
+    right: 20,
+    backgroundColor: '#fff',
+    borderRadius: 10,
+    padding: 16,
+    zIndex: 1000,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 13,
+  },
+  corridaTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 10,
+  },
+  corridaText: {
+    fontSize: 14,
+    marginBottom: 5,
+  },
+  corridaButtonsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 10,
+  },
+  corridaButton: {
+    backgroundColor: '#e74c3c',
+    padding: 10,
+    borderRadius: 5,
+    flex: 1,
+    marginHorizontal: 5,
+    alignItems: 'center',
+  },
+  corridaButtonText: {
+    color: '#fff',
+    fontWeight: 'bold',
   },
   map: {
     flex: 1,
