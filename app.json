@@ -1,10 +1,10 @@
 {
   "expo": {
     "name": "HelpGuincho",
-    "slug": "HelpGuincho",
+    "slug": "helphuiincho",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/icon.png",
+    "icon": "./src/assets/images/icon.png",
     "scheme": "myapp",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
@@ -21,13 +21,10 @@
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/images/adaptive-icon.png",
+        "foregroundImage": "./src/assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "permissions": [
-        "ACCESS_FINE_LOCATION",
-        "ACCESS_COARSE_LOCATION"
-      ],
+      "permissions": ["ACCESS_FINE_LOCATION", "ACCESS_COARSE_LOCATION"],
       "package": "com.anonymous.HelpGuincho",
       "config": {
         "googleMaps": {
@@ -38,14 +35,14 @@
     "web": {
       "bundler": "metro",
       "output": "static",
-      "favicon": "./assets/images/favicon.png"
+      "favicon": "./src/assets/images/favicon.png"
     },
     "plugins": [
       "expo-router",
       [
         "expo-splash-screen",
         {
-          "image": "./assets/images/splash-icon.png",
+          "image": "./src/assets/images/splash-icon.png",
           "imageWidth": 200,
           "resizeMode": "contain",
           "backgroundColor": "#ffffff"
@@ -60,8 +57,9 @@
         "origin": false
       },
       "eas": {
-        "projectId": "60487f9a-a98a-4f0b-810a-b3c0d6f9415d"
+        "projectId": "d029f969-1ac0-4421-a169-770bbfd6f170"
       }
-    }
+    },
+    "owner": "miguer"
   }
 }

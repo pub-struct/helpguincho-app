@@ -1,0 +1,67 @@
+{
+  "$schema": "https://biomejs.dev/schemas/1.9.4/schema.json",
+  "formatter": {
+    "enabled": true,
+    "formatWithErrors": false,
+    "indentStyle": "space",
+    "indentWidth": 2,
+    "lineEnding": "lf",
+    "lineWidth": 120,
+    "attributePosition": "auto"
+  },
+  "javascript": {
+    "formatter": {
+      "jsxQuoteStyle": "double",
+      "quoteProperties": "asNeeded",
+      "trailingCommas": "es5",
+      "semicolons": "asNeeded",
+      "arrowParentheses": "always",
+      "bracketSpacing": true,
+      "bracketSameLine": false,
+      "quoteStyle": "single",
+      "attributePosition": "auto"
+    }
+  },
+  "linter": {
+    "enabled": true,
+    "rules": {
+      "recommended": true,
+      "correctness": {
+        "useExhaustiveDependencies": "off"
+      },
+      "a11y": {
+        "useValidAnchor": "error",
+        "noSvgWithoutTitle": "off",
+        "useValidAriaRole": "off",
+        "useAriaPropsForRole": "off",
+        "useFocusableInteractive": "off",
+        "useSemanticElements": "off",
+        "noRedundantRoles": "off"
+      },
+      "style": {
+        "useBlockStatements": "off",
+        "noParameterAssign": "off",
+        "noNonNullAssertion": "off",
+        "useImportType": "off",
+        "noUnusedTemplateLiteral": "off",
+        "useTemplate": "off",
+        "useExponentiationOperator": "off",
+        "useSingleVarDeclarator": "off"
+      },
+      "suspicious": {
+        "noExplicitAny": "off",
+        "noImplicitAnyLet": "off",
+        "noArrayIndexKey": "off",
+        "noMisleadingCharacterClass": "off",
+        "noAssignInExpressions": "off",
+        "noDoubleEquals": "off"
+      },
+      "security": { "noDangerouslySetInnerHtml": "off" },
+      "complexity": { "noForEach": "off", "noUselessFragments": "off" }
+    }
+  },
+  "organizeImports": { "enabled": true },
+  "files": {
+    "ignore": [".next/**/*", "node_modules/**/*", ".husky/**/*"]
+  }
+}
