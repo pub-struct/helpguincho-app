@@ -114,18 +114,7 @@ export default function HomeScreen() {
         return;
       }
 
-<<<<<<< HEAD
-      // Conectar ao WebSocket passando o token na query string
-      const socket = io('https://api.helpguincho.co', {
-        query: { token },
-        transports: ['websocket'], // Garante que a conexão seja via WebSocket
-      });
-
-      // Ouvir o evento correto (ride)
-      socket.on('ride', (data) => {
-        console.log('Nova corrida recebida:', data);
-        setCorrida(data);
-=======
+      
       // Usar a função socketIOClient para criar a conexão
       const socket = socketIOClient(token);
 
@@ -141,7 +130,6 @@ export default function HomeScreen() {
 
       socket.on('disconnect', () => {
         console.log('Desconectado do WebSocket');
->>>>>>> 8c8ff07 (configuração websocket)
       });
 
       // Desconectar ao desmontar o componente
