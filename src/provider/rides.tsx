@@ -1,112 +1,436 @@
-import { RideContext } from '@/context/ride'
-import RidesService from '@/infra/services/rides'
-import { useMutation } from '@tanstack/react-query'
-import { useState } from 'react'
-import { Text, View, TouchableOpacity, StyleSheet, Dimensions } from 'react-native'
-const { width, height } = Dimensions.get('window')
+import { RideContext } from '@/context/ride';
+import RidesService from '@/infra/services/rides';
+import { useMutation } from '@tanstack/react-query';
+import { useState, useEffect, useRef } from 'react';
+import {
+  Text,
+  View,
+  TouchableOpacity,
+  StyleSheet,
+  Dimensions,
+  Image,
+  Animated,
+} from 'react-native';
+import MapView, { Marker } from 'react-native-maps';
+import * as Location from 'expo-location';
+import MapViewDirections from 'react-native-maps-directions';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { useAuth } from '@/hooks/auth';
+import { Audio } from 'expo-av';
+import { useRouter, useRootNavigationState } from 'expo-router';
+import { useAppReady } from '@/context/appReady';
+
+const { width, height } = Dimensions.get('window');
+const GOOGLE_MAPS_API_KEY = 'AIzaSyCgJspzdsVuS5w6P7eAXvzW3e8vCNDcpv0';
 
 export const RideProvider = ({ children }: { children: React.ReactNode }) => {
-  const [ride, setRide] = useState<Ride | null>(null)
+  const [ride, setRide] = useState<Ride | null>(null);
+  const [showDeliveryAddress, setShowDeliveryAddress] = useState(false);
+  const [userLocation, setUserLocation] = useState<{ latitude: number; longitude: number } | null>(null);
+  const [initialLocation, setInitialLocation] = useState<{ latitude: number; longitude: number } | null>(null);
+
+  const truckImage = require('../assets/images/winchtruck.png');
+  const userImage = require('../assets/images/usericon.png');
+
+  const { user } = useAuth();
+  const slideAnim = useRef(new Animated.Value(height)).current;
+  const soundRef = useRef<Audio.Sound | null>(null);
+  const router = useRouter();
+  const navigationState = useRootNavigationState();
+  const navigationStateRef = useRef(navigationState);
+  const { isAppReady } = useAppReady();
+
+  useEffect(() => {
+    navigationStateRef.current = navigationState;
+  }, [navigationState]);
+
+  useEffect(() => {
+    const loadSound = async () => {
+      const { sound } = await Audio.Sound.createAsync(
+        require('../assets/sounds/notification.mp3')
+      );
+      soundRef.current = sound;
+    };
+
+    loadSound();
+
+    return () => {
+      if (soundRef.current) {
+        soundRef.current.unloadAsync();
+      }
+    };
+  }, []);
+
+  const playNotificationSound = async () => {
+    if (soundRef.current) {
+      await soundRef.current.replayAsync();
+    }
+  };
+
+
+  const animateRideBox = () => {
+    Animated.timing(slideAnim, {
+      toValue: 0, 
+      duration: 500, 
+      useNativeDriver: true, 
+    }).start();
+  };
+
+
+  useEffect(() => {
+    if (ride) {
+      playNotificationSound();
+      animateRideBox(); 
+    }
+  }, [ride]);
+
   const { mutate } = useMutation({
     mutationKey: ['ride', ride],
     mutationFn: async () => {
       if (!ride?.id) {
-        return
+        console.error('nenhuma corrida para aceitar.');
+        return;
       }
-      const res = await new RidesService().acceptRide(ride?.id)
-      if (res.statusCode !== 200) {
-        console.log(res.body)
-        throw new Error('Erro ao aceitar corrida')
+  
+      console.log(`tentando aceitar a corrida: ${ride.id}`);
+      const res = await new RidesService().acceptRide(ride.id);
+  
+      if (!res || res.statusCode !== 200) {
+        console.error('Erro ao aceitar corrida:', res?.body);
+        throw new Error('Erro ao aceitar corrida');
+      }
+  
+      return res;
+    },
+    onError: (error) => console.error('Erro na mutacao', error),
+    onSuccess: async () => {
+      console.log('corrida aceita');
+  
+      if (!ride?.id) {
+        console.error('Erro: ID da corrida não encontrado');
+        return;
+      }
+  
+      console.log(`Buscando detalhes corrida com ID: ${ride.id}`);
+  
+      try {
+        const updatedRide = await new RidesService().get(ride.id);
+  
+        if (!updatedRide?.body) {
+          console.error('Erro: Detalhes da corrida não encontrados!');
+          return;
+        }
+  
+        console.log('detalhes update da corrida:', updatedRide.body);
+        setRide(updatedRide.body);
+  
+        const checkAppReady = setInterval(() => {
+          if (isAppReady && navigationStateRef.current?.key) {
+            clearInterval(checkAppReady);
+            router.push(`/(tabs)/RidesScreen?id=${updatedRide.body.id}`);
+          }
+        }, 500);
+        
+        setTimeout(() => {
+          if (navigationState?.key) {
+            console.log('forçando router.replace');
+            router.replace(`/(tabs)/RidesScreen?id=${updatedRide.body.id}`);
+          }
+        }, 5000);
+      } catch (error) {
+        console.error('erro ao buscar os detalhes', error);
       }
     },
-    onError: (error) => {
-      console.error(error)
-    },
-    onSuccess: () => {
-      console.log('Corrida aceita com sucesso')
-    },
-  })
+  });
+  
+  useEffect(() => {
+    (async () => {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') {
+        console.log('Permissão de localização negada');
+        return;
+      }
+      const location = await Location.getCurrentPositionAsync({});
+      const { latitude, longitude } = location.coords;
+      const currentLoc = { latitude, longitude };
+      setUserLocation(currentLoc);
+      setInitialLocation(currentLoc);
+
+      const subscription = await Location.watchPositionAsync(
+        { accuracy: Location.Accuracy.High, distanceInterval: 10 },
+        (loc) => {
+          const { latitude, longitude } = loc.coords;
+          setUserLocation({ latitude, longitude });
+        }
+      );
+      return () => subscription.remove();
+    })();
+  }, []);
+
   return (
-    <RideContext.Provider value={{ ride, setRide }}>
-      {!!ride ? (
-        <View style={styles.corridaContainer}>
-          <Text style={styles.corridaTitle}>Nova Corrida</Text>
-          <Text style={styles.corridaText}>Cliente: {ride?.client?.full_name}</Text>
-          <Text style={styles.corridaText}>Veículo: {ride?.client?.vehicle}</Text>
-          <Text style={styles.corridaText}>Placa: {ride?.client?.plate}</Text>
-          <Text style={styles.corridaText}>Local de coleta: {ride?.pickup_location}</Text>
-          <Text style={styles.corridaText}>Local de entrega: {ride?.delivery_address}</Text>
-          <Text style={styles.corridaText}>Descrição: {ride?.description}</Text>
-          <Text style={styles.corridaText}>Preço: R$ {ride?.price}</Text>
-          <View style={styles.corridaButtonsContainer}>
-            <TouchableOpacity style={styles.corridaButton}>
-              <Text style={styles.corridaButtonText}>Recusar</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.corridaButton, { backgroundColor: '#2ecc71' }]}
-              onPress={() => {
-                mutate()
-              }}
-            >
-              <Text style={styles.corridaButtonText}>Aceitar</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      ) : (
-        children
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      {initialLocation && (
+        <MapView
+          style={StyleSheet.absoluteFillObject}
+          initialRegion={{
+            latitude: initialLocation.latitude,
+            longitude: initialLocation.longitude,
+            latitudeDelta: 0.0922,
+            longitudeDelta: 0.0421,
+          }}
+        >
+          {userLocation && (
+            <Marker coordinate={userLocation} title="Você está aqui">
+              <Image 
+                source={require('@/assets/images/user-location.png')} 
+                style={{ width: 30, height: 30 }} 
+              />
+            </Marker>
+          )}
+        </MapView>
       )}
-    </RideContext.Provider>
-  )
-}
+
+      <View style={styles.newHeader}>
+        <TouchableOpacity style={styles.menuButton}>
+          <Text style={styles.menuIcon}>☰</Text>
+        </TouchableOpacity>
+        <View style={styles.welcomeContainer}>
+          <Text style={styles.welcomeText}>Bem-vindo, {user?.full_name || 'Usuário'}</Text>
+        </View>
+      </View>
+
+      <RideContext.Provider value={{ ride, setRide }}>
+        {!!ride ? (
+          <Animated.View
+            style={[
+              styles.container,
+              {
+                transform: [{ translateY: slideAnim }], 
+              },
+            ]}
+          >
+
+            <View style={styles.container}>
+              <View style={styles.subcontainer}>
+                {/* Caixa de Urgência */}
+                <View style={styles.urgenteBox}>
+                  <Text style={styles.urgenteText}>Urgente!</Text>
+                </View>
+
+                {/* Imagem do caminhão */}
+                <View style={styles.truckImageContainer}>
+                  <Image
+                    source={truckImage}
+                    style={styles.truckImage}
+                    resizeMode="contain" />
+                </View>
+
+                {/* Informações do motorista */}
+                <View style={styles.infoContainer}>
+                  <Image source={userImage} style={styles.profileImage} />
+                  <View>
+                    <Text style={styles.driverName}>{ride?.driver?.full_name}</Text>
+                    <Text style={styles.vehicleInfo}>
+                      Guincho - {ride?.driver?.vehicle?.model}
+                    </Text>
+                    <Text style={styles.vehicleInfo}>Placa: {ride?.driver?.vehicle?.plate}</Text>
+                    <Text style={styles.distance}>12 KM</Text>
+                    <Text style={styles.price}>R$ {ride?.price}</Text>
+                  </View>
+                </View>
+
+                {/* Detalhes da Corrida */}
+                <View style={styles.rideDetails}>
+                  <Text style={styles.label}>Cliente:</Text>
+                  <Text style={styles.value}>{ride?.client?.full_name}</Text>
+
+                  <Text style={styles.label}>Veículo:</Text>
+                  <Text style={styles.value}>
+                    {ride?.client?.vehicle}   -   {ride?.client?.plate}
+                  </Text>
+
+                  <Text style={styles.label}>Localização do veículo:</Text>
+                  <Text style={styles.value}>{ride?.pickup_location}</Text>
+
+                  <Text style={styles.label}>Local de entrega:</Text>
+                  <Text style={styles.value}>{ride?.delivery_address}</Text>
+
+                  <Text style={styles.label}>Descrição:</Text>
+                  <Text style={styles.value}>{ride?.description}</Text>
+                </View>
+
+                {/* Botões de Ação */}
+                <View style={styles.buttonContainer}>
+                  <TouchableOpacity style={styles.acceptButton} onPress={() => mutate()}>
+                    <Text style={styles.buttonText}>Eu aceito</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.rejectButton}
+                    onPress={() => setRide(null)} // Oculta a interface ao recusar
+                  >
+                    <Text style={styles.buttonText}>Recusar</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </View>
+          </Animated.View>
+        ) : (
+          children
+        )}
+      </RideContext.Provider>
+    </GestureHandlerRootView>
+  );
+};
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
-    backgroundColor: 'red',
-    position: 'relative',
-  },
-  corridaContainer: {
     position: 'absolute',
-    bottom: 120,
-    left: 20,
-    right: 20,
+    width: '100%',
+    bottom: 1,
+    left: 1,
+    right: 3,
     backgroundColor: '#fff',
     borderRadius: 10,
-    padding: 16,
-    zIndex: 1000,
+    //padding: 1,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
-    shadowRadius: 13,
+    shadowRadius: 6,
+    zIndex: 1000,
   },
-  corridaTitle: {
-    fontSize: 18,
+  subcontainer: {
+    //position: 'absolute',
+    width: '100%',
+    bottom: 18,
+    // left: 20,
+    // right: 20,
+    backgroundColor: '#fff',
+    borderRadius: 10,
+    padding: 3,
+    // shadowColor: '#000',
+    // shadowOffset: { width: 0, height: 4 },
+    // shadowOpacity: 0.3,
+    // shadowRadius: 6,
+    // zIndex: 1000,
+  },
+  containeranim: {
+    position: 'absolute',
+    width: '100%',
+    bottom: 1,
+    left: 2,
+    right: 2,
+    backgroundColor: '#fff',
+    borderRadius: 10,
+    padding: 3,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 6,
+    zIndex: 1000,
+  },
+  urgenteBox: {
+    backgroundColor: '#FF4D4D',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 6,
+    alignSelf: 'flex-start',
+    marginBottom: 8,
+  },
+  urgenteText: {
+    color: '#FFF',
     fontWeight: 'bold',
+    fontSize: 14,
+  },
+  truckImage: {
+    width: '100%',
+    height: 80,
     marginBottom: 10,
   },
-  corridaText: {
-    fontSize: 14,
-    marginBottom: 5,
+  truckImageContainer: {
+    shadowColor: '#000',
+    shadowOffset: { width: 4, height: 6 },
+    shadowOpacity: 0.3,
+    shadowRadius: 5,
+    elevation: 6,
+    backgroundColor: 'white',
+    borderRadius: 10,
+    paddingBottom: 5,
+    paddingRight: 5,
+    marginBottom: 10,
   },
-  corridaButtonsContainer: {
+  infoContainer: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: 10,
-  },
-  corridaButton: {
-    backgroundColor: '#e74c3c',
-    padding: 10,
-    borderRadius: 5,
-    flex: 1,
-    marginHorizontal: 5,
     alignItems: 'center',
+    marginBottom: 12,
   },
-  corridaButtonText: {
-    color: '#fff',
+  profileImage: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    marginRight: 10,
+  },
+  driverName: {
+    fontSize: 16,
     fontWeight: 'bold',
   },
-  map: {
+  vehicleInfo: {
+    fontSize: 14,
+    color: '#666',
+  },
+  distance: {
+    fontSize: 14,
+    color: '#333',
+  },
+  price: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#000',
+    marginTop: 4,
+  },
+  rideDetails: {
+    marginBottom: 12,
+  },
+  label: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#333',
+  },
+  value: {
+    fontSize: 14,
+    color: '#555',
+    marginBottom: 6,
+  },
+  buttonContainer: {
+    flexDirection: 'column',
+    marginTop: 10,
+    gap: 10,
+    bottom: 10,
+  },
+  acceptButton: {
     flex: 1,
+    backgroundColor: '#FFC107',
+    paddingVertical: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+    marginLeft: 5,
+    marginRight: 5,
+    
+  },
+  rejectButton: {
+    flex: 1,
+    backgroundColor: 'transparent',
+    borderWidth: 2,
+    borderColor: '#000',
+    paddingVertical: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+    marginLeft: 5,
+    marginRight: 5,
+  },
+  buttonText: {
+    color: '#000',
+    fontWeight: 'bold',
+    fontSize: 14,
   },
   newHeader: {
     position: 'absolute',
@@ -139,148 +463,4 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#000',
   },
-  statusBox: {
-    position: 'absolute',
-    alignSelf: 'center',
-    top: 120,
-    width: '90%',
-    borderRadius: 10,
-    padding: 16,
-    zIndex: 2,
-    overflow: 'hidden',
-  },
-  statusTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginBottom: 4,
-    color: '#FFF',
-  },
-  statusSubtitle: {
-    fontSize: 14,
-    color: '#FFF',
-    marginBottom: 8,
-  },
-  statusDesc: {
-    fontSize: 13,
-    color: '#999',
-    marginBottom: 16,
-  },
-  statusButton: {
-    padding: 12,
-    borderRadius: 6,
-    alignItems: 'center',
-  },
-  statusButtonText: {
-    fontSize: 14,
-    fontWeight: 'bold',
-  },
-  sheetBackground: {
-    backgroundColor: '#fff',
-  },
-  sheetContentContainer: {
-    flex: 1,
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-  },
-  sheetHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 10,
-    marginTop: 10,
-  },
-  sheetTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-  },
-  sheetBackButton: {
-    color: '#555',
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  optionButtonsContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-evenly',
-    marginTop: 20,
-  },
-  optionButton: {
-    backgroundColor: '#fff',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 13,
-    width: 120,
-    height: 60,
-    borderRadius: 6,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  optionIcon: {
-    width: 44,
-    height: 44,
-  },
-  optionButtonText: {
-    fontSize: 15,
-    fontWeight: 'bold',
-    color: '#000',
-  },
-  sectionTitle: {
-    marginTop: 10,
-    marginBottom: 6,
-    fontSize: 14,
-    fontWeight: 'bold',
-    color: '#333',
-  },
-  infoContainer: {
-    backgroundColor: '#f5f5f5',
-    padding: 10,
-    borderRadius: 8,
-    marginBottom: 12,
-  },
-  label: {
-    fontWeight: 'bold',
-    color: '#333',
-    marginTop: 6,
-  },
-  value: {
-    color: '#555',
-    marginBottom: 6,
-  },
-  historicoItem: {
-    backgroundColor: '#f5f5f5',
-    marginBottom: 10,
-    padding: 10,
-    borderRadius: 8,
-  },
-  historicoData: {
-    fontSize: 14,
-    fontWeight: 'bold',
-    marginBottom: 4,
-    color: '#333',
-  },
-  historicoInfo: {
-    fontSize: 13,
-    color: '#555',
-  },
-  bottomSheetContainer: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    height: height,
-    zIndex: 1000,
-  },
-  drawerContainer: {
-    height: height * 0.5,
-    backgroundColor: '#fff',
-    paddingTop: 50,
-    paddingHorizontal: 20,
-  },
-  drawerContent: {
-    flex: 1,
-  },
-  drawerItem: {
-    fontSize: 16,
-    paddingVertical: 10,
-    color: '#000',
-  },
-})
+});

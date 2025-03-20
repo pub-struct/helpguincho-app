@@ -1,4 +1,4 @@
-export const BACKEND_URL = 'http://127.0.0.1:8000'
+export const BACKEND_URL = 'https://api.help-guincho.co'
 export enum HttpStatusCode {
   ok = 200,
   created = 201,

@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "HelpGuincho",
-    "slug": "helphuiincho",
+    "slug": "meuAppGuincho",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./src/assets/images/icon.png",
@@ -24,7 +24,10 @@
         "foregroundImage": "./src/assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "permissions": ["ACCESS_FINE_LOCATION", "ACCESS_COARSE_LOCATION"],
+      "permissions": [
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION"
+      ],
       "package": "com.anonymous.HelpGuincho",
       "config": {
         "googleMaps": {
@@ -57,9 +60,9 @@
         "origin": false
       },
       "eas": {
-        "projectId": "d029f969-1ac0-4421-a169-770bbfd6f170"
+        "projectId": "60487f9a-a98a-4f0b-810a-b3c0d6f9415d"
       }
     },
-    "owner": "miguer"
+    "owner": "1leofernandes"
   }
 }

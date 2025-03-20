@@ -7,11 +7,14 @@ import RidesService from '@/infra/services/rides'
 import { getToken } from '@/infra/services/token'
 import { useEffect, useState } from 'react'
 import { Socket } from 'socket.io-client'
+import { useAppReady } from '@/context/appReady';
+
 
 export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { user } = useAuth()
-  const { setRide } = useRides()
-  const [socket, setSocket] = useState<Socket | null>(null)
+  const { user } = useAuth();
+  const { setRide } = useRides();
+  const [socket, setSocket] = useState<Socket | null>(null);
+  const { isAppReady } = useAppReady();
 
   useEffect(() => {
     let newSocket: Socket | null = null
@@ -30,9 +33,10 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         // addNotification(data)
       })
       newSocket.on('ride', async (data) => {
-        console.log(data.body.ride_id)
+        console.log(data.body.ride_id);
         if (data.body.ride_id) {
-          const ride = await new RidesService().get(data.body.ride_id)
+          const ride = await new RidesService().get(data.body.ride_id);
+          console.log("Detalhes da corrida:", ride.body);
           setRide(ride.body)
         }
       })

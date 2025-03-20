@@ -1,63 +1,90 @@
-'use client'
-import { AuthContext } from '@/context/auth'
-import { HttpStatusCode } from '@/infra'
-import AuthService from '@/infra/services/auth'
-import { setToken } from '@/infra/services/token'
-import AsyncStorage from '@react-native-async-storage/async-storage'
-import { usePathname, useRouter } from 'expo-router'
-import { useQuery } from '@tanstack/react-query'
-import { useState } from 'react'
-import LoadingScreen from '@/app/(tabs)/LoadingScreen'
-import { Alert } from 'react-native'
+'use client';
+import { AuthContext } from '@/context/auth';
+import { HttpStatusCode } from '@/infra';
+import AuthService from '@/infra/services/auth';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useRouter } from 'expo-router';
+import { useQuery } from '@tanstack/react-query';
+import { useState } from 'react';
+import LoadingScreen from '@/app/(tabs)/LoadingScreen';
+import { Alert } from 'react-native';
+
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
-  const router = useRouter()
-  const [user, setUser] = useState<AuthUser | null>(null)
+  const router = useRouter();
+  const [user, setUser] = useState<AuthUser | null>(null);
 
   const login = async (email: string, password: string) => {
     try {
-      const response = await new AuthService().login({ email, password })
-      console.log(email, password)
+      const response = await new AuthService().login({ email, password });
+      console.log('Resposta da API:', response); 
+
       if (response.statusCode === HttpStatusCode.unauthorized) {
-        Alert.alert('Não encontramos nenhum usuário com essas credenciais, verifique suas credenciais')
-        return
+        Alert.alert('Não encontramos nenhum usuário com essas credenciais, verifique suas credenciais');
+        return;
       }
-      if (response.body.role !== 'driver') {
-        Alert.alert('Você não tem permissão para acessar essa página, precisa ser um motorista cadastrado.')
-        return
+
+      if (response.body.role !== 'driver' /* && response.body.role !== 'admin'*/) {
+        console.log('Role do usuário:', response.body.role); 
+        Alert.alert('Você não tem permissão para acessar essa página, precisa ser um motorista cadastrado.');
+        return;
       }
-      // toast.success('Login realizado com sucesso!')
-      setUser(response.body)
-      await setToken(response.body.token)
-      router.push('/HomeScreen')
-    } catch (error) {}
-  }
+
+      
+      await AsyncStorage.setItem('token', response.body.token);
+      console.log('Token armazenado:', response.body.token); 
+
+      
+      setUser(response.body);
+
+      
+      router.push('/HomeScreen');
+    } catch (error) {
+      console.error('Erro durante o login:', error); 
+      Alert.alert('Erro ao fazer login. Tente novamente.');
+    }
+  };
 
   const logout = async () => {
     try {
-      const res = await new AuthService().logout()
-      if (res.statusCode === 401) {
-        setUser(null)
-      }
-      await AsyncStorage.removeItem('token')
-      setUser(null)
-    } catch (error) {}
-  }
+      const res = await new AuthService().logout();
+      console.log('Resposta do logout:', res); 
+
+      await AsyncStorage.removeItem('token');
+      console.log('Token removido'); 
+
+      setUser(null);
+      router.replace('/LoginScreen'); 
+    } catch (error) {
+      console.error('Erro durante o logout:', error); 
+    }
+  };
+
   const session = useQuery({
     queryKey: ['session'],
     queryFn: async () => {
-      const res = await new AuthService().session()
-      if (res.statusCode !== 200) {
-        router.push('/LoginScreen')
-        await logout()
-        // await deleteCookies()
-        return {}
+      const token = await AsyncStorage.getItem('token');
+      if (!token) {
+        router.push('/LoginScreen');
+        return {};
       }
-      setUser(res.body)
-      return res
+
+      const res = await new AuthService().session();
+      //console.log('Resposta da sessão:', res); 
+
+      if (res.statusCode !== 200) {
+        await AsyncStorage.removeItem('token'); 
+        router.push('/LoginScreen');
+        return {};
+      }
+
+      setUser(res.body);
+      return res;
     },
-  })
+  });
+
   if (session.isPending) {
-    return <LoadingScreen />
+    return <LoadingScreen />;
   }
-  return <AuthContext.Provider value={{ user, login, logout }}>{children}</AuthContext.Provider>
-}
+
+  return <AuthContext.Provider value={{ user, login, logout }}>{children}</AuthContext.Provider>;
+};
