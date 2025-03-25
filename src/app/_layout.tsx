@@ -6,23 +6,14 @@ import { useEffect } from 'react'
 import 'react-native-reanimated'
 
 import { Providers } from '@/provider'
-import { AppReadyProvider, useAppReady } from '@/context/appReady';
 
 SplashScreen.preventAutoHideAsync()
 
 export default function RootLayout() {
-  const { setAppReady } = useAppReady();
-
   const [loaded] = useFonts({
     SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
   })
 
-  useEffect(() => {
-    if (loaded) {
-      SplashScreen.hideAsync().then(() => setAppReady(true));
-    }
-  }, [loaded]);
-  
   useEffect(() => {
     if (loaded) {
       SplashScreen.hideAsync()

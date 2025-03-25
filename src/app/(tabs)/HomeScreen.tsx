@@ -8,32 +8,35 @@ import * as Location from 'expo-location';
 import MapViewDirections from 'react-native-maps-directions';
 import { Drawer } from 'react-native-drawer-layout';
 import { BlurView } from 'expo-blur';
-import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { socketIOClient } from '@/infra/http/client/socket-io-client';
 import { useAuth } from '@/hooks/auth';
 import { useRides } from '@/hooks/rides'; 
-import RidesService from '@/infra/services/rides';
 
 const { width, height } = Dimensions.get('window');
 const GOOGLE_MAPS_API_KEY = 'AIzaSyCgJspzdsVuS5w6P7eAXvzW3e8vCNDcpv0';
 
+const isValidCoordinate = (coord: number) => {
+  return coord !== null && 
+         coord !== undefined && 
+         !isNaN(coord) && 
+         Math.abs(coord) <= 90;
+};
+
 export default function HomeScreen() {
   const router = useRouter();
   const { user } = useAuth();
-  const { ride, setRide } = useRides(); // Use o hook useRides para acessar as corridas
+  const { ride, activeRide, setActiveRide, showDeliveryRoute, setShowDeliveryRoute, isAvailable, setIsAvailable } = useRides();
 
   const bottomSheetRef = useRef<BottomSheet>(null);
   const snapPoints = useMemo(() => ['25%', '80%'], []);
   const [sheetContent, setSheetContent] = useState<'initial' | 'conta' | 'historico'>('initial');
   const [userLocation, setUserLocation] = useState<{ latitude: number; longitude: number } | null>(null);
   const [initialLocation, setInitialLocation] = useState<{ latitude: number; longitude: number } | null>(null);
-  const [showDeliveryAddress, setShowDeliveryAddress] = useState(false);
-  const [disponivel, setDisponivel] = useState(false);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const [isRouting, setIsRouting] = useState(false);
 
   
-  const statusBoxPosition = useRef(new Animated.Value(120)).current;
+  const statusBoxPosition = useRef(new Animated.Value(isAvailable ? 120 : 520)).current;
 
   useEffect(() => {
     if (ride?.id) {
@@ -41,21 +44,194 @@ export default function HomeScreen() {
     }
   }, [ride]);
 
+  const handleGuinchar = () => {
+    if (!activeRide || !userLocation) {
+      Alert.alert('Erro', 'Localização não disponível');
+      return;
+    }
+  
+    if (!showDeliveryRoute) {
+      Alert.alert(
+        'Confirmação',
+        'Confirmar a coleta do veículo?',
+        [
+          { text: 'Cancelar', style: 'cancel' },
+          { 
+            text: 'Confirmar', 
+            onPress: () => {
+              if (!activeRide?.delivery_lat || !activeRide?.delivery_long) {
+                Alert.alert('Erro', 'Coordenadas de entrega inválidas');
+                return;
+              }
+              
+              setShowDeliveryRoute(true);
+              
+              if (!userLocation) {
+                Alert.alert('Erro', 'Sua localização não está disponível');
+                return;
+              }
+  
+              mapRef.current?.fitToCoordinates([
+                { 
+                  latitude: userLocation.latitude,
+                  longitude: userLocation.longitude
+                },
+                { 
+                  latitude: activeRide.delivery_lat, 
+                  longitude: activeRide.delivery_long 
+                }
+              ], {
+                edgePadding: { top: 100, right: 100, bottom: 100, left: 100 },
+                animated: true
+              });
+            }
+          },
+        ]
+      );
+    } else {
+      Alert.alert(
+        'Finalizar Corrida',
+        'Você confirmou a entrega do veículo?',
+        [
+          { text: 'Cancelar', style: 'cancel' },
+          { 
+            text: 'Confirmar', 
+            onPress: () => {
+              setActiveRide(null);
+              setShowDeliveryRoute(false);
+              
+              if (mapRef.current && userLocation) {
+                mapRef.current.animateToRegion({
+                  latitude: userLocation.latitude,
+                  longitude: userLocation.longitude,
+                  latitudeDelta: 0.0922,
+                  longitudeDelta: 0.0421,
+                });
+              }
+            }
+          },
+        ]
+      );
+    }
+  };
+
+  const mapRef = useRef<MapView>(null);
+
+  const renderRoutes = () => {
+    if (!activeRide || !userLocation || isRouting) return null;
+  
+    return (
+      <>
+        {!showDeliveryRoute && (
+          <>
+            {isValidCoordinate(activeRide?.pickup_lat) && 
+             isValidCoordinate(activeRide?.pickup_long) && (
+              <>
+                <MapViewDirections
+                  origin={userLocation}
+                  destination={{
+                    latitude: activeRide?.pickup_lat,
+                    longitude: activeRide?.pickup_long,
+                  }}
+                  apikey={GOOGLE_MAPS_API_KEY}
+                  strokeWidth={8}
+                  strokeColor="#FFD700"
+                  onReady={(result) => {
+                    console.log('Distance to pickup:', result.distance);
+                    setIsRouting(false);
+                  }}
+                  onError={(error) => {
+                    console.error('Error:', error);
+                    setIsRouting(false);
+                    Alert.alert('Erro', 'Não foi possível calcular a rota');
+                  }}
+                  onStart={() => setIsRouting(true)}
+                />
+                <Marker
+                  coordinate={{
+                    latitude: activeRide?.pickup_lat,
+                    longitude: activeRide?.pickup_long,
+                  }}
+                  title="Local de coleta"
+                >
+                  <Image 
+                    source={require('@/assets/images/pickupicon.png')} 
+                    style={styles.markerImage}
+                  />
+                </Marker>
+              </>
+            )}
+          </>
+        )}
+  
+        {showDeliveryRoute && (
+          <>
+            {isValidCoordinate(activeRide.delivery_lat) && 
+             isValidCoordinate(activeRide.delivery_long) && (
+              <>
+                <MapViewDirections
+                  origin={userLocation} 
+                  destination={{
+                    latitude: activeRide.delivery_lat,
+                    longitude: activeRide.delivery_long,
+                  }}
+                  apikey={GOOGLE_MAPS_API_KEY}
+                  strokeWidth={6}
+                  strokeColor="#32CD32"
+                  onReady={(result) => {
+                    console.log('Distance:', result.distance);
+                    setIsRouting(false);
+                  }}
+                  onError={(error) => {
+                    console.error('Error:', error);
+                    setIsRouting(false);
+                    Alert.alert('Erro', 'Não foi possível calcular a rota de entrega');
+                  }}
+                  onStart={() => setIsRouting(true)}
+                />
+                <Marker
+                  coordinate={{
+                    latitude: activeRide.delivery_lat,
+                    longitude: activeRide.delivery_long,
+                  }}
+                  title="Local de entrega"
+                >
+                  <Image 
+                    source={require('@/assets/images/deliveryicon.png')} 
+                    style={styles.markerImage}
+                  />
+                </Marker>
+              </>
+            )}
+          </>
+        )}
+      </>
+    );
+  };
+
   const moveStatusBoxDown = () => {
     Animated.timing(statusBoxPosition, {
-      toValue: 520, 
+      toValue: 520,
+      duration: 500,
+      useNativeDriver: false,
+    }).start();
+  };
+  
+  const moveStatusBoxUp = () => {
+    Animated.timing(statusBoxPosition, {
+      toValue: 120,
       duration: 500,
       useNativeDriver: false,
     }).start();
   };
 
-  const moveStatusBoxUp = () => {
-    Animated.timing(statusBoxPosition, {
-      toValue: 120, 
-      duration: 500,
-      useNativeDriver: false,
-    }).start();
-  };
+  useEffect(() => {
+    if (isAvailable) {
+      moveStatusBoxDown();
+    } else {
+      moveStatusBoxUp();
+    }
+  }, [isAvailable]);
 
   const openSheet = (mode: 'conta' | 'historico') => {
     setSheetContent(mode);
@@ -73,39 +249,149 @@ export default function HomeScreen() {
   };
 
   
-  {ride && userLocation && (
-    <MapViewDirections
-      origin={userLocation}
-      destination={{ latitude: ride.pickup_lat, longitude: ride.pickup_long }}
-      apikey={GOOGLE_MAPS_API_KEY}
-      strokeWidth={4}
-      strokeColor="hotpink"
-    />
-  )}
+  // {ride && userLocation && (
+  //   <MapViewDirections
+  //     origin={userLocation}
+  //     destination={{ latitude: ride.pickup_lat, longitude: ride.pickup_long }}
+  //     apikey={GOOGLE_MAPS_API_KEY}
+  //     strokeWidth={4}
+  //     strokeColor="hotpink"
+  //   />
+  // )}
 
   useEffect(() => {
-    (async () => {
-      const { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== 'granted') {
-        console.log('Permissão de localização negada');
-        return;
-      }
-      const location = await Location.getCurrentPositionAsync({});
-      const { latitude, longitude } = location.coords;
-      const currentLoc = { latitude, longitude };
-      setUserLocation(currentLoc);
-      setInitialLocation(currentLoc);
+    let isMounted = true;
+    let subscription: Location.LocationSubscription;
 
-      const subscription = await Location.watchPositionAsync(
-        { accuracy: Location.Accuracy.High, distanceInterval: 10 },
-        (loc) => {
-          const { latitude, longitude } = loc.coords;
-          setUserLocation({ latitude, longitude });
-        }
-      );
-      return () => subscription.remove();
+    (async () => {
+      try {
+        const { status } = await Location.requestForegroundPermissionsAsync();
+        if (status !== 'granted' || !isMounted) return;
+
+        const getLocation = async () => {
+          const location = await Location.getCurrentPositionAsync({
+            accuracy: Location.Accuracy.High
+          });
+          
+          if (isMounted) {
+            const newLocation = {
+              latitude: location.coords.latitude,
+              longitude: location.coords.longitude
+            };
+            setUserLocation(newLocation);
+            if (!initialLocation) setInitialLocation(newLocation);
+          }
+        };
+
+        await getLocation();
+        subscription = await Location.watchPositionAsync(
+          { accuracy: Location.Accuracy.High, distanceInterval: 10 },
+          (loc) => {
+            if (isMounted) {
+              setUserLocation({
+                latitude: loc.coords.latitude,
+                longitude: loc.coords.longitude
+              });
+            }
+          }
+        );
+      } catch (error) {
+        console.error('Erro de localização:', error);
+      }
     })();
+
+    return () => {
+      isMounted = false;
+      subscription?.remove();
+    };
   }, []);
+
+
+  
+
+  const renderMapElements = () => {
+    if (!activeRide || !userLocation) return null;
+
+    return (
+      <>
+
+        {!showDeliveryRoute && (
+          <>
+            {isValidCoordinate(activeRide.pickup_lat) && 
+             isValidCoordinate(activeRide.pickup_long) && (
+              <MapViewDirections
+                origin={userLocation}
+                destination={{
+                  latitude: activeRide.pickup_lat,
+                  longitude: activeRide.pickup_long,
+                }}
+                apikey={GOOGLE_MAPS_API_KEY}
+                strokeWidth={6}
+                strokeColor="#FFD700"
+                onReady={() => setIsRouting(false)}
+                onError={(error) => {
+                  console.error('Erro na rota:', error);
+                  setIsRouting(false);
+                }}
+                onStart={() => setIsRouting(true)}
+              />
+            )}
+            <Marker
+              coordinate={{
+                latitude: activeRide.pickup_lat,
+                longitude: activeRide.pickup_long,
+              }}
+              title="Local de coleta"
+            >
+              <Image 
+                source={require('@/assets/images/pickupicon.png')} 
+                style={styles.markerImage}
+              />
+            </Marker>
+          </>
+        )}
+
+        {showDeliveryRoute && (
+          <>
+            {isValidCoordinate(activeRide.delivery_lat) && 
+             isValidCoordinate(activeRide.delivery_long) && (
+              <MapViewDirections
+                origin={userLocation}
+                destination={{
+                  latitude: activeRide.delivery_lat,
+                  longitude: activeRide.delivery_long,
+                }}
+                apikey={GOOGLE_MAPS_API_KEY}
+                strokeWidth={6}
+                strokeColor="#32CD32"
+                onReady={() => setIsRouting(false)}
+                onError={(error) => {
+                  console.error('Erro na rota:', error);
+                  setIsRouting(false);
+                }}
+                onStart={() => setIsRouting(true)}
+              />
+            )}
+            <Marker
+              coordinate={{
+                latitude: activeRide.delivery_lat,
+                longitude: activeRide.delivery_long,
+              }}
+              title="Local de entrega"
+            >
+              <Image 
+                source={require('@/assets/images/deliveryicon.png')} 
+                style={styles.markerImage}
+              />
+            </Marker>
+          </>
+        )}
+      </>
+    );
+  };
+
+
+
 
   const renderSheetContent = () => {
     switch (sheetContent) {
@@ -150,8 +436,8 @@ export default function HomeScreen() {
               <Text style={styles.value}>{user?.vehicle?.model || 'N/A'}</Text>
               <Text style={styles.label}>Placa</Text>
               <Text style={styles.value}>{user?.vehicle?.plate || 'N/A'}</Text>
-              <Text style={styles.label}>Cor</Text>
-              <Text style={styles.value}>{user?.vehicle?.plate || 'N/A'}</Text>
+              {/* <Text style={styles.label}>Cor</Text>
+              <Text style={styles.value}>{user?.vehicle?.plate || 'N/A'}</Text> */}
             </View>
           </ScrollView>
         );
@@ -187,41 +473,40 @@ export default function HomeScreen() {
 
   return (
     <Drawer
-    open={isDrawerOpen}
-    onOpen={() => setIsDrawerOpen(true)}
-    onClose={() => setIsDrawerOpen(false)}
-    renderDrawerContent={() => (
-      <View style={styles.drawerContainer}>
-        <View style={styles.drawerContent}>
-          <TouchableOpacity onPress={() => console.log('Gerar Recibo')}>
-            <Text style={styles.drawerItem}>Gerar Recibo</Text>
-          </TouchableOpacity>
-          <TouchableOpacity onPress={handleLogout}>
-            <Text style={styles.drawerItem}>Sair</Text>
-          </TouchableOpacity>
+      open={isDrawerOpen}
+      onOpen={() => setIsDrawerOpen(true)}
+      onClose={() => setIsDrawerOpen(false)}
+      renderDrawerContent={() => (
+        <View style={styles.drawerContainer}>
+          <View style={styles.drawerContent}>
+            <TouchableOpacity onPress={() => console.log('Gerar Recibo')}>
+              <Text style={styles.drawerItem}>Gerar Recibo</Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => console.log('Sair')}>
+              <Text style={styles.drawerItem}>Sair</Text>
+            </TouchableOpacity>
+          </View>
         </View>
-      </View>
-    )}
-  >
+      )}
+    >
       <GestureHandlerRootView style={styles.container}>
         {initialLocation && (
           <MapView
+            ref={mapRef}
             style={styles.map}
             initialRegion={{
               latitude: initialLocation.latitude,
               longitude: initialLocation.longitude,
-              latitudeDelta: 0.0922,
-              longitudeDelta: 0.0421,
+              latitudeDelta: 0.0922, //0.0922,
+              longitudeDelta: 0.0421, //0.0421,
             }}
+            showsUserLocation={true}
+            followsUserLocation={true}
           >
-            {userLocation && (
-              <Marker coordinate={userLocation} title="Você está aqui">
-                <Image source={require('@/assets/images/user-location.png')} style={{ width: 30, height: 30 }} />
-              </Marker>
-            )}
+            {/* {renderRoutes()} */}
+            {renderMapElements()}
           </MapView>
         )}
-
         <View style={styles.newHeader}>
           <TouchableOpacity style={styles.menuButton} onPress={() => setIsDrawerOpen(true)}>
             <Text style={styles.menuIcon}>☰</Text>
@@ -231,55 +516,70 @@ export default function HomeScreen() {
           </View>
         </View>
 
-        <Animated.View
-          style={[
-            styles.statusBox,
-            {
-              top: statusBoxPosition,
-            },
-          ]}
-        >
-          <BlurView intensity={40} style={styles.blurContainer}>
-            <Text style={styles.statusTitle}>
-              Você está <Text style={{ color: disponivel ? '#2ecc71' : '#e74c3c' }}>{disponivel ? 'ON' : 'OFF'}</Text>
-            </Text>
-            <Text style={styles.statusSubtitle}>Guinchos feitos hoje: X</Text>
-            <Text style={styles.statusDesc}>
-              {disponivel
-                ? 'Você está disponível para receber chamados!'
-                : 'Buscaremos serviço de guinchos assim que ficar online.'}
-            </Text>
-            <TouchableOpacity
-              style={[styles.statusButton, { backgroundColor: disponivel ? '#333' : '#FFC107' }]}
-              onPress={() => {
-                if (disponivel) {
-                  moveStatusBoxUp();
-                } else {
-                  moveStatusBoxDown();
-                }
-                setDisponivel(!disponivel);
-              }}
+
+        {!activeRide && (
+          <>
+            <Animated.View
+              style={[
+                styles.statusBox,
+                {
+                  top: statusBoxPosition,
+                },
+              ]}
             >
-              <Text style={[styles.statusButtonText, { color: disponivel ? '#fff' : '#000' }]}>
-                {disponivel ? 'Ficar OFF' : 'Estou pronto pra trabalhar'}
-              </Text>
-            </TouchableOpacity>
-          </BlurView>
-        </Animated.View>
-        <View style={styles.bottomSheetContainer} pointerEvents="box-none">
-          <BottomSheet
-            ref={bottomSheetRef}
-            snapPoints={snapPoints}
-            enablePanDownToClose={false}
-            index={0}
-            backgroundStyle={styles.sheetBackground}
-            handleIndicatorStyle={{ backgroundColor: '#ccc' }}
-          >
-            <BottomSheetView style={{ flex: 1 }}>
-              {renderSheetContent()}
-            </BottomSheetView>
-          </BottomSheet>
-        </View>
+              <BlurView intensity={40} style={styles.blurContainer}>
+                <Text style={styles.statusTitle}>
+                  Você está <Text style={{ color: isAvailable ? '#2ecc71' : '#e74c3c' }}>{isAvailable ? 'ON' : 'OFF'}</Text>
+                </Text>
+                <Text style={styles.statusSubtitle}>Guinchos feitos hoje: X</Text>
+                <Text style={styles.statusDesc}>
+                  {isAvailable
+                    ? 'Você está disponível para receber chamados!'
+                    : 'Buscaremos serviço de guinchos assim que ficar online.'}
+                </Text>
+                <TouchableOpacity
+                  style={[styles.statusButton, { backgroundColor: isAvailable ? '#333' : '#FFC107' }]}
+                  onPress={() => {
+                    setIsAvailable(!isAvailable);
+                  }}
+                >
+                  <Text style={[styles.statusButtonText, { color: isAvailable ? '#fff' : '#000' }]}>
+                    {isAvailable ? 'Ficar OFF' : 'Estou pronto pra trabalhar'}
+                  </Text>
+                </TouchableOpacity>
+              </BlurView>
+            </Animated.View>
+
+          </>
+        )}
+
+            <View style={styles.bottomSheetContainer} pointerEvents="box-none">
+              <BottomSheet
+                ref={bottomSheetRef}
+                snapPoints={snapPoints}
+                enablePanDownToClose={false}
+                index={0}
+                backgroundStyle={styles.sheetBackground}
+                handleIndicatorStyle={{ backgroundColor: '#ccc' }}
+              >
+                <BottomSheetView style={{ flex: 1 }}>
+                  {renderSheetContent()}
+                </BottomSheetView>
+              </BottomSheet>
+            </View>
+
+            {activeRide && (
+              <View style={styles.guincharContainer}>
+                <TouchableOpacity 
+                  style={styles.guincharButton}
+                  onPress={handleGuinchar}
+                >
+                  <Text style={styles.guincharButtonText}>
+                    {showDeliveryRoute ? 'Concluir Corrida' : 'Guinchar Veículo'}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            )}
       </GestureHandlerRootView>
     </Drawer>
   );
@@ -293,6 +593,7 @@ const styles = StyleSheet.create({
   },
   map: {
     flex: 1,
+    ...StyleSheet.absoluteFillObject,
   },
   newHeader: {
     position: 'absolute',
@@ -303,7 +604,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 20,
-    zIndex: 10,
+    zIndex: 100000,
   },
   menuButton: {
     backgroundColor: '#FFC107',
@@ -518,11 +819,6 @@ const styles = StyleSheet.create({
     paddingRight: 5,
     marginBottom: 10,
   },
-  // infoContainer: {
-  //   flexDirection: 'row',
-  //   alignItems: 'center',
-  //   marginBottom: 12,
-  // },
   profileImage: {
     width: 50,
     height: 50,
@@ -550,16 +846,6 @@ const styles = StyleSheet.create({
   rideDetails: {
     marginBottom: 12,
   },
-  // label: {
-  //   fontSize: 14,
-  //   fontWeight: 'bold',
-  //   color: '#333',
-  // },
-  // value: {
-  //   fontSize: 14,
-  //   color: '#555',
-  //   marginBottom: 6,
-  // },
   buttonContainer: {
     flexDirection: 'column',
     marginTop: 10,
@@ -607,16 +893,38 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#333',
   },
+  guincharContainer: {
+    position: 'absolute',
+    bottom: 0,
+    width: '100%',
+    backgroundColor: 'white',
+    paddingTop: 20,
+    paddingBottom: 100,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    elevation: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    zIndex: 1000,
+  },
   guincharButton: {
+    alignSelf: 'center',
     backgroundColor: '#FFC107',
-    paddingVertical: 12,
-    borderRadius: 8,
+    padding: 15,
+    borderRadius: 25,
+    width: '90%',
     alignItems: 'center',
-    marginTop: 10,
   },
   guincharButtonText: {
-    color: '#000',
+    fontSize: 18,
     fontWeight: 'bold',
-    fontSize: 14,
+    color: '#000',
+  },
+  markerImage: {
+    width: 40,
+    height: 40,
+    resizeMode: 'contain',
   },
 });

@@ -1,7 +1,7 @@
 import { RideContext } from '@/context/ride';
 import RidesService from '@/infra/services/rides';
 import { useMutation } from '@tanstack/react-query';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import {
   Text,
   View,
@@ -18,16 +18,34 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { useAuth } from '@/hooks/auth';
 import { Audio } from 'expo-av';
 import { useRouter, useRootNavigationState } from 'expo-router';
-import { useAppReady } from '@/context/appReady';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const { width, height } = Dimensions.get('window');
 const GOOGLE_MAPS_API_KEY = 'AIzaSyCgJspzdsVuS5w6P7eAXvzW3e8vCNDcpv0';
 
+
+const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number) => {
+  const R = 6371e3; 
+  const φ1 = lat1 * Math.PI/180;
+  const φ2 = lat2 * Math.PI/180;
+  const Δφ = (lat2-lat1) * Math.PI/180;
+  const Δλ = (lon2-lon1) * Math.PI/180;
+
+  const a = Math.sin(Δφ/2) * Math.sin(Δφ/2) +
+            Math.cos(φ1) * Math.cos(φ2) *
+            Math.sin(Δλ/2) * Math.sin(Δλ/2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+
+  return R * c;
+};
+
+
+
 export const RideProvider = ({ children }: { children: React.ReactNode }) => {
   const [ride, setRide] = useState<Ride | null>(null);
-  const [showDeliveryAddress, setShowDeliveryAddress] = useState(false);
   const [userLocation, setUserLocation] = useState<{ latitude: number; longitude: number } | null>(null);
   const [initialLocation, setInitialLocation] = useState<{ latitude: number; longitude: number } | null>(null);
+  const [activeRide, setActiveRide] = useState<Ride | null>(null);
 
   const truckImage = require('../assets/images/winchtruck.png');
   const userImage = require('../assets/images/usericon.png');
@@ -38,7 +56,15 @@ export const RideProvider = ({ children }: { children: React.ReactNode }) => {
   const router = useRouter();
   const navigationState = useRootNavigationState();
   const navigationStateRef = useRef(navigationState);
-  const { isAppReady } = useAppReady();
+  const [showDeliveryRoute, setShowDeliveryRoute] = useState(false);
+  const [isAvailable, setIsAvailable] = useState(false);
+
+  const handleAcceptRide = () => {
+    setActiveRide(ride);
+    setShowDeliveryRoute(false);
+    setRide(null);
+  };
+
 
   useEffect(() => {
     navigationStateRef.current = navigationState;
@@ -84,64 +110,54 @@ export const RideProvider = ({ children }: { children: React.ReactNode }) => {
     }
   }, [ride]);
 
+  useEffect(() => {
+    const loadAvailability = async () => {
+      const savedAvailability = await AsyncStorage.getItem('driverAvailability');
+      if (savedAvailability !== null) {
+        setIsAvailable(JSON.parse(savedAvailability));
+      }
+    };
+    loadAvailability();
+  }, []);
+  
+  useEffect(() => {
+    AsyncStorage.setItem('driverAvailability', JSON.stringify(isAvailable));
+  }, [isAvailable]);
+
+  const distance = useMemo(() => {
+    if (!userLocation || !ride?.pickup_lat || !ride?.pickup_long) return 'X';
+    
+    const dist = calculateDistance(
+      userLocation.latitude,
+      userLocation.longitude,
+      ride.pickup_lat,
+      ride.pickup_long
+    );
+    
+    return (dist / 1000).toFixed(1) + ' KM';
+  }, [userLocation, ride]);
+
   const { mutate } = useMutation({
     mutationKey: ['ride', ride],
     mutationFn: async () => {
       if (!ride?.id) {
-        console.error('nenhuma corrida para aceitar.');
-        return;
+        return
       }
-  
-      console.log(`tentando aceitar a corrida: ${ride.id}`);
-      const res = await new RidesService().acceptRide(ride.id);
-  
-      if (!res || res.statusCode !== 200) {
-        console.error('Erro ao aceitar corrida:', res?.body);
-        throw new Error('Erro ao aceitar corrida');
-      }
-  
-      return res;
-    },
-    onError: (error) => console.error('Erro na mutacao', error),
-    onSuccess: async () => {
-      console.log('corrida aceita');
-  
-      if (!ride?.id) {
-        console.error('Erro: ID da corrida não encontrado');
-        return;
-      }
-  
-      console.log(`Buscando detalhes corrida com ID: ${ride.id}`);
-  
-      try {
-        const updatedRide = await new RidesService().get(ride.id);
-  
-        if (!updatedRide?.body) {
-          console.error('Erro: Detalhes da corrida não encontrados!');
-          return;
-        }
-  
-        console.log('detalhes update da corrida:', updatedRide.body);
-        setRide(updatedRide.body);
-  
-        const checkAppReady = setInterval(() => {
-          if (isAppReady && navigationStateRef.current?.key) {
-            clearInterval(checkAppReady);
-            router.push(`/(tabs)/RidesScreen?id=${updatedRide.body.id}`);
-          }
-        }, 500);
-        
-        setTimeout(() => {
-          if (navigationState?.key) {
-            console.log('forçando router.replace');
-            router.replace(`/(tabs)/RidesScreen?id=${updatedRide.body.id}`);
-          }
-        }, 5000);
-      } catch (error) {
-        console.error('erro ao buscar os detalhes', error);
+      const res = await new RidesService().acceptRide(ride?.id)
+      if (res.statusCode !== 200) {
+        console.log(res.body)
+        throw new Error('Erro ao aceitar corrida')
       }
     },
-  });
+    onError: (error) => {
+      console.error(error)
+    },
+    onSuccess: () => {
+      setActiveRide(ride);
+      setRide(null);
+      console.log('Corrida aceita com sucesso')
+    },
+  })
   
   useEffect(() => {
     (async () => {
@@ -187,19 +203,19 @@ export const RideProvider = ({ children }: { children: React.ReactNode }) => {
               />
             </Marker>
           )}
+
+          <View style={styles.newHeaderRide}>
+            <View style={styles.menuButtonRide}>
+              <Text style={styles.menuIconRide}>☰</Text>
+            </View>
+            <View style={styles.welcomeContainerRide}>
+              <Text style={styles.welcomeTextRide}>Bem-vindo, {user?.full_name || 'Usuário'}</Text>
+            </View>
+          </View>
         </MapView>
       )}
 
-      <View style={styles.newHeader}>
-        <TouchableOpacity style={styles.menuButton}>
-          <Text style={styles.menuIcon}>☰</Text>
-        </TouchableOpacity>
-        <View style={styles.welcomeContainer}>
-          <Text style={styles.welcomeText}>Bem-vindo, {user?.full_name || 'Usuário'}</Text>
-        </View>
-      </View>
-
-      <RideContext.Provider value={{ ride, setRide }}>
+      <RideContext.Provider value={{ ride, setRide, activeRide, setActiveRide, showDeliveryRoute, setShowDeliveryRoute, isAvailable, setIsAvailable}}>
         {!!ride ? (
           <Animated.View
             style={[
@@ -234,7 +250,7 @@ export const RideProvider = ({ children }: { children: React.ReactNode }) => {
                       Guincho - {ride?.driver?.vehicle?.model}
                     </Text>
                     <Text style={styles.vehicleInfo}>Placa: {ride?.driver?.vehicle?.plate}</Text>
-                    <Text style={styles.distance}>12 KM</Text>
+                    <Text style={styles.distance}>{distance}</Text>
                     <Text style={styles.price}>R$ {ride?.price}</Text>
                   </View>
                 </View>
@@ -266,7 +282,7 @@ export const RideProvider = ({ children }: { children: React.ReactNode }) => {
                   </TouchableOpacity>
                   <TouchableOpacity
                     style={styles.rejectButton}
-                    onPress={() => setRide(null)} // Oculta a interface ao recusar
+                    onPress={() => setRide(null)}
                   >
                     <Text style={styles.buttonText}>Recusar</Text>
                   </TouchableOpacity>
@@ -432,7 +448,7 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     fontSize: 14,
   },
-  newHeader: {
+  newHeaderRide: {
     position: 'absolute',
     top: 40,
     left: 0,
@@ -443,22 +459,22 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     zIndex: 10,
   },
-  menuButton: {
+  menuButtonRide: {
     backgroundColor: '#FFC107',
     borderRadius: 20,
     padding: 10,
   },
-  menuIcon: {
+  menuIconRide: {
     fontSize: 24,
     color: '#000',
   },
-  welcomeContainer: {
+  welcomeContainerRide: {
     backgroundColor: '#FFC107',
     borderRadius: 20,
     paddingHorizontal: 15,
     paddingVertical: 10,
   },
-  welcomeText: {
+  welcomeTextRide: {
     fontSize: 16,
     fontWeight: 'bold',
     color: '#000',
