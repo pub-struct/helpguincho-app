@@ -1,5 +1,15 @@
 import React, { useRef, useMemo, useState, useEffect } from 'react';
-import { Animated, View, Text, StyleSheet, TouchableOpacity, Dimensions, ScrollView, Image, Alert } from 'react-native';
+import { 
+  Animated, 
+  View, 
+  Text, 
+  StyleSheet, 
+  TouchableOpacity, 
+  Dimensions, 
+  ScrollView, 
+  Image, 
+  Alert 
+} from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import MapView, { Marker } from 'react-native-maps';
 import BottomSheet, { BottomSheetView } from '@gorhom/bottom-sheet';
@@ -11,21 +21,41 @@ import { BlurView } from 'expo-blur';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAuth } from '@/hooks/auth';
 import { useRides } from '@/hooks/rides'; 
+import * as ImagePicker from 'expo-image-picker';
+import { Ionicons } from '@expo/vector-icons';
+//import IconTruck from "@/assets/iconsride/truck"; 
+//import IconClient from "@/assets/iconsride/client";
+
 
 const { width, height } = Dimensions.get('window');
 const GOOGLE_MAPS_API_KEY = 'AIzaSyCgJspzdsVuS5w6P7eAXvzW3e8vCNDcpv0';
 
 const isValidCoordinate = (coord: number) => {
-  return coord !== null && 
-         coord !== undefined && 
-         !isNaN(coord) && 
-         Math.abs(coord) <= 90;
+  return (
+    coord !== null &&
+    coord !== undefined &&
+    !isNaN(coord) &&
+    Math.abs(coord) <= 90
+  );
 };
 
 export default function HomeScreen() {
+  // const truckPosition = {
+  //   userLocation.latitude,
+  //   userLocation.longitude
+  // };
+
   const router = useRouter();
   const { user } = useAuth();
-  const { ride, activeRide, setActiveRide, showDeliveryRoute, setShowDeliveryRoute, isAvailable, setIsAvailable } = useRides();
+  const { 
+    ride, 
+    activeRide, 
+    setActiveRide, 
+    showDeliveryRoute, 
+    setShowDeliveryRoute, 
+    isAvailable, 
+    setIsAvailable 
+  } = useRides();
 
   const bottomSheetRef = useRef<BottomSheet>(null);
   const snapPoints = useMemo(() => ['25%', '80%'], []);
@@ -34,8 +64,20 @@ export default function HomeScreen() {
   const [initialLocation, setInitialLocation] = useState<{ latitude: number; longitude: number } | null>(null);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [isRouting, setIsRouting] = useState(false);
+  const [showPhotoUpload, setShowPhotoUpload] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
 
-  
+  // const [photos, setPhotos] = useState<Array<{ uri: string } | null>>([
+  //   null,
+  //   null,
+  //   null,
+  //   null
+  // ]);
+  const [photos, setPhotos] = useState<Array<{ uri: string } | null>>(
+    Array(4).fill(null)
+  );
+
   const statusBoxPosition = useRef(new Animated.Value(isAvailable ? 120 : 520)).current;
 
   useEffect(() => {
@@ -44,13 +86,88 @@ export default function HomeScreen() {
     }
   }, [ride]);
 
-  const handleGuinchar = () => {
-    if (!activeRide || !userLocation) {
-      Alert.alert('Erro', 'Localização não disponível');
-      return;
+
+  useEffect(() => {
+    (async () => {
+      const { status } = await ImagePicker.requestCameraPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert(
+          'Permissão de câmera negada', 
+          'Precisamos da permissão para acessar a câmera.'
+        );
+      }
+    })();
+  }, []);
+
+  const handleTakePhoto = async (index: number) => {
+    try {
+      const result = await ImagePicker.launchCameraAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [4, 3],
+        quality: 1,
+      });
+  
+      if (!result.canceled && result.assets?.length) {
+        const newPhotos = [...photos];
+        const { uri } = result.assets[0];
+        newPhotos[index] = { uri };
+        setPhotos(newPhotos);
+      }
+    } catch (error) {
+      console.error('Erro ao tirar foto:', error);
+    }
+  };
+
+  const handleSendPhotos = async (rideId: number) => {
+    const validPhotos = photos.filter(photo => photo !== null);
+    
+    if (validPhotos.length < 4) {
+      throw new Error('Você precisa tirar 4 fotos antes de continuar.');
     }
   
-    if (!showDeliveryRoute) {
+    const formData = new FormData();
+  
+    try {
+      for (let i = 0; i < validPhotos.length; i++) {
+        const photo = validPhotos[i]!;
+        const response = await fetch(photo.uri);
+        
+        if (!response.ok) throw new Error('Erro ao processar imagem');
+        
+        const blob = await response.blob();
+        formData.append(`photos[${i}]`, blob, `photo_${i}.jpg`);
+      }
+  
+      const token = await AsyncStorage.getItem('token');
+      const response = await fetch(`https://api.help-guincho.co/api/v1/rides/${rideId}/add-photos/`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+        body: formData,
+      });
+  
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Erro ao enviar fotos');
+      }
+  
+      return await response.json();
+    } catch (error: any) {
+      console.error('Erro no upload:', error);
+      throw new Error(error.message || 'Erro ao enviar fotos');
+    }
+  };
+
+  const handleConfirmPhotos = async () => {
+    if (!activeRide) return;
+  
+    try {
+      setIsUploading(true);
+      await handleSendPhotos(activeRide.id);
+      
+      setShowPhotoUpload(false);
       Alert.alert(
         'Confirmação',
         'Confirmar a coleta do veículo?',
@@ -66,15 +183,10 @@ export default function HomeScreen() {
               
               setShowDeliveryRoute(true);
               
-              if (!userLocation) {
-                Alert.alert('Erro', 'Sua localização não está disponível');
-                return;
-              }
-  
               mapRef.current?.fitToCoordinates([
                 { 
-                  latitude: userLocation.latitude,
-                  longitude: userLocation.longitude
+                  latitude: userLocation!.latitude,
+                  longitude: userLocation!.longitude
                 },
                 { 
                   latitude: activeRide.delivery_lat, 
@@ -88,6 +200,22 @@ export default function HomeScreen() {
           },
         ]
       );
+    } catch (err) {
+      console.error('Erro ao confirmar fotos:', err);
+      Alert.alert('Erro', 'Falha ao enviar fotos. Tente novamente.');
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const handleGuinchar = async () => {
+    if (!activeRide || !userLocation) {
+      Alert.alert('Erro', 'Localização não disponível');
+      return;
+    }
+  
+    if (!showDeliveryRoute) {
+      setShowPhotoUpload(true);
     } else {
       Alert.alert(
         'Finalizar Corrida',
@@ -248,17 +376,6 @@ export default function HomeScreen() {
     router.replace('/LoginScreen');
   };
 
-  
-  // {ride && userLocation && (
-  //   <MapViewDirections
-  //     origin={userLocation}
-  //     destination={{ latitude: ride.pickup_lat, longitude: ride.pickup_long }}
-  //     apikey={GOOGLE_MAPS_API_KEY}
-  //     strokeWidth={4}
-  //     strokeColor="hotpink"
-  //   />
-  // )}
-
   useEffect(() => {
     let isMounted = true;
     let subscription: Location.LocationSubscription;
@@ -306,15 +423,11 @@ export default function HomeScreen() {
     };
   }, []);
 
-
-  
-
   const renderMapElements = () => {
     if (!activeRide || !userLocation) return null;
 
     return (
       <>
-
         {!showDeliveryRoute && (
           <>
             {isValidCoordinate(activeRide.pickup_lat) && 
@@ -390,9 +503,6 @@ export default function HomeScreen() {
     );
   };
 
-
-
-
   const renderSheetContent = () => {
     switch (sheetContent) {
       case 'initial':
@@ -414,9 +524,12 @@ export default function HomeScreen() {
         return (
           <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingHorizontal: 20 }}>
             <View style={styles.sheetHeader}>
-              <Text style={styles.sheetTitle}>Conta</Text>
-              <TouchableOpacity onPress={goBackToInitial}>
-                <Text style={styles.sheetBackButton}>Voltar</Text>
+              <TouchableOpacity style={styles.sheetBackButton} onPress={goBackToInitial}>
+                <View style={styles.rightContainer}>
+                  <Image source={require('@/assets/images/account.png')} style={styles.icon} />
+                  <Text style={styles.sheetTitle}>Conta</Text> 
+                </View>
+                <Text style={styles.BackButton}>Voltar</Text>
               </TouchableOpacity>
             </View>
             <Text style={styles.sectionTitle}>Informações pessoais</Text>
@@ -425,6 +538,8 @@ export default function HomeScreen() {
               <Text style={styles.value}>{user?.full_name || 'N/A'}</Text>
               <Text style={styles.label}>E-mail</Text>
               <Text style={styles.value}>{user?.email || 'N/A'}</Text>
+              <Text style={styles.label}>CNH</Text>
+              <Text style={styles.value}>{user?.cnh || 'N/A'}</Text>
               <Text style={styles.label}>Telefone</Text>
               <Text style={styles.value}>{user?.phone || 'N/A'}</Text>
               <Text style={styles.label}>Senha</Text>
@@ -432,12 +547,14 @@ export default function HomeScreen() {
             </View>
             <Text style={styles.sectionTitle}>Guincho</Text>
             <View style={styles.infoContainer}>
+              <Text style={styles.label}>Marca</Text>
+              <Text style={styles.value}>{user?.vehicle?.brand || 'N/A'}</Text>
               <Text style={styles.label}>Modelo</Text>
               <Text style={styles.value}>{user?.vehicle?.model || 'N/A'}</Text>
+              <Text style={styles.label}>Ano</Text>
+              <Text style={styles.value}>{user?.vehicle?.year || 'N/A'}</Text>
               <Text style={styles.label}>Placa</Text>
               <Text style={styles.value}>{user?.vehicle?.plate || 'N/A'}</Text>
-              {/* <Text style={styles.label}>Cor</Text>
-              <Text style={styles.value}>{user?.vehicle?.plate || 'N/A'}</Text> */}
             </View>
           </ScrollView>
         );
@@ -445,9 +562,12 @@ export default function HomeScreen() {
         return (
           <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingHorizontal: 20 }}>
             <View style={styles.sheetHeader}>
-              <Text style={styles.sheetTitle}>Histórico</Text>
-              <TouchableOpacity onPress={goBackToInitial}>
-                <Text style={styles.sheetBackButton}>Voltar</Text>
+              <TouchableOpacity style={styles.sheetBackButton} onPress={goBackToInitial}>
+                <View style={styles.rightContainer}>
+                  <Image source={require('@/assets/images/historico.png')} style={styles.icon} />
+                  <Text style={styles.sheetTitle}>Histórico</Text> 
+                </View>
+                <Text style={styles.BackButton}>Voltar</Text>
               </TouchableOpacity>
             </View>
             <ScrollView style={{ flex: 1, paddingHorizontal: 20 }} contentContainerStyle={{ paddingBottom: 20 }}>
@@ -482,7 +602,7 @@ export default function HomeScreen() {
             <TouchableOpacity onPress={() => console.log('Gerar Recibo')}>
               <Text style={styles.drawerItem}>Gerar Recibo</Text>
             </TouchableOpacity>
-            <TouchableOpacity onPress={() => console.log('Sair')}>
+            <TouchableOpacity onPress={handleLogout}>
               <Text style={styles.drawerItem}>Sair</Text>
             </TouchableOpacity>
           </View>
@@ -497,89 +617,147 @@ export default function HomeScreen() {
             initialRegion={{
               latitude: initialLocation.latitude,
               longitude: initialLocation.longitude,
-              latitudeDelta: 0.0922, //0.0922,
-              longitudeDelta: 0.0421, //0.0421,
+              latitudeDelta: 0.0922,
+              longitudeDelta: 0.0421,
             }}
             showsUserLocation={true}
             followsUserLocation={true}
           >
-            {/* {renderRoutes()} */}
             {renderMapElements()}
           </MapView>
         )}
+
+        {/* HEADER */}
         <View style={styles.newHeader}>
           <TouchableOpacity style={styles.menuButton} onPress={() => setIsDrawerOpen(true)}>
             <Text style={styles.menuIcon}>☰</Text>
           </TouchableOpacity>
           <View style={styles.welcomeContainer}>
-            <Text style={styles.welcomeText}>Bem-vindo, {user?.full_name || 'Usuário'}</Text>
+            <Text style={styles.welcomeText}>
+              Bem-vindo, {user?.full_name || 'Usuário'}
+            </Text>
           </View>
         </View>
 
-
+        {/* CAIXA ON/OFF se não há corrida ativa */}
         {!activeRide && (
-          <>
-            <Animated.View
-              style={[
-                styles.statusBox,
-                {
-                  top: statusBoxPosition,
-                },
-              ]}
-            >
-              <BlurView intensity={40} style={styles.blurContainer}>
-                <Text style={styles.statusTitle}>
-                  Você está <Text style={{ color: isAvailable ? '#2ecc71' : '#e74c3c' }}>{isAvailable ? 'ON' : 'OFF'}</Text>
+          <Animated.View
+            style={[
+              styles.statusBox,
+              { top: statusBoxPosition },
+            ]}
+          >
+            <BlurView intensity={40} style={styles.blurContainer}>
+              <Text style={styles.statusTitle}>
+                Você está <Text style={{ color: isAvailable ? '#2ecc71' : '#e74c3c' }}>
+                  {isAvailable ? 'ON' : 'OFF'}
                 </Text>
-                <Text style={styles.statusSubtitle}>Guinchos feitos hoje: X</Text>
-                <Text style={styles.statusDesc}>
-                  {isAvailable
-                    ? 'Você está disponível para receber chamados!'
-                    : 'Buscaremos serviço de guinchos assim que ficar online.'}
+              </Text>
+              <Text style={styles.statusSubtitle}>Guinchos feitos hoje: X</Text>
+              <Text style={styles.statusDesc}>
+                {isAvailable
+                  ? 'Você está disponível para receber chamados!'
+                  : 'Buscaremos serviço de guinchos assim que ficar online.'}
+              </Text>
+              <TouchableOpacity
+                style={[styles.statusButton, { backgroundColor: isAvailable ? '#333' : '#FFC107' }]}
+                onPress={() => setIsAvailable(!isAvailable)}
+              >
+                <Text style={[styles.statusButtonText, { color: isAvailable ? '#fff' : '#000' }]}>
+                  {isAvailable ? 'Ficar OFF' : 'Estou pronto pra trabalhar'}
                 </Text>
-                <TouchableOpacity
-                  style={[styles.statusButton, { backgroundColor: isAvailable ? '#333' : '#FFC107' }]}
-                  onPress={() => {
-                    setIsAvailable(!isAvailable);
-                  }}
-                >
-                  <Text style={[styles.statusButtonText, { color: isAvailable ? '#fff' : '#000' }]}>
-                    {isAvailable ? 'Ficar OFF' : 'Estou pronto pra trabalhar'}
-                  </Text>
-                </TouchableOpacity>
-              </BlurView>
-            </Animated.View>
-
-          </>
+              </TouchableOpacity>
+            </BlurView>
+          </Animated.View>
         )}
 
-            <View style={styles.bottomSheetContainer} pointerEvents="box-none">
-              <BottomSheet
-                ref={bottomSheetRef}
-                snapPoints={snapPoints}
-                enablePanDownToClose={false}
-                index={0}
-                backgroundStyle={styles.sheetBackground}
-                handleIndicatorStyle={{ backgroundColor: '#ccc' }}
-              >
-                <BottomSheetView style={{ flex: 1 }}>
-                  {renderSheetContent()}
-                </BottomSheetView>
-              </BottomSheet>
+        {/* BOTTOM SHEET */}
+        <View style={styles.bottomSheetContainer} pointerEvents="box-none">
+          <BottomSheet
+            ref={bottomSheetRef}
+            snapPoints={snapPoints}
+            enablePanDownToClose={false}
+            index={0}
+            backgroundStyle={styles.sheetBackground}
+            handleIndicatorStyle={{ backgroundColor: '#ccc' }}
+          >
+            <BottomSheetView style={{ flex: 1 }}>
+              {renderSheetContent()}
+            </BottomSheetView>
+          </BottomSheet>
+        </View>
+
+        {/* BOTÃO GUINCHAR/CONCLUIR QUANDO HÁ CORRIDA ATIVA */}
+        {activeRide && (
+          <View style={styles.guincharContainer}>
+            <TouchableOpacity 
+              style={styles.guincharButton}
+              onPress={handleGuinchar}
+            >
+              <Text style={styles.guincharButtonText}>
+                {showDeliveryRoute ? 'Concluir Corrida' : 'Guinchar Veículo'}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
+        {/* CAIXA FLUTUANTE DE FOTOS - SÓ EXIBE QUANDO showPhotoUpload = true */}
+        {showPhotoUpload && (
+          <View style={styles.photoUploadContainer}>
+            <Text style={styles.photoUploadTitle}>
+              Para sua e nossa segurança tire 4 fotos do estado atual do veículo que está sendo guinchado
+            </Text>
+            
+            <View style={styles.photoRow}>
+              {photos.map((photo, index) => (
+                <TouchableOpacity
+                  key={index}
+                  style={styles.photoPlaceholder}
+                  onPress={() => handleTakePhoto(index)}
+                  disabled={isUploading}
+                >
+                  {photo ? (
+                    <Image 
+                      source={{ uri: photo.uri }} 
+                      style={styles.photo} 
+                      resizeMode="cover"
+                    />
+                  ) : (
+                    <Ionicons name="camera" size={32} color="gray" />
+                  )}
+                </TouchableOpacity>
+              ))}
             </View>
 
-            {activeRide && (
-              <View style={styles.guincharContainer}>
-                <TouchableOpacity 
-                  style={styles.guincharButton}
-                  onPress={handleGuinchar}
-                >
-                  <Text style={styles.guincharButtonText}>
-                    {showDeliveryRoute ? 'Concluir Corrida' : 'Guinchar Veículo'}
-                  </Text>
-                </TouchableOpacity>
+            <TouchableOpacity
+              style={[
+                styles.confirmButton,
+                (photos.filter(p => p).length < 4 || isUploading) && styles.disabledButton
+              ]}
+              onPress={handleConfirmPhotos}
+              disabled={photos.filter(p => p).length < 4 || isUploading}
+            >
+              <Text style={styles.confirmButtonText}>
+                {isUploading ? 'Enviando...' : 'Ir para entrega'}
+              </Text>
+            </TouchableOpacity>
+
+            {isUploading && (
+              <View style={styles.progressBar}>
+                <View style={[styles.progressFill, { width: `${uploadProgress}%` }]} />
               </View>
             )}
+
+            <TouchableOpacity
+              style={styles.cancelButton}
+              onPress={() => setShowPhotoUpload(false)}
+              disabled={isUploading}
+            >
+              <Text style={styles.cancelButtonText}>Voltar</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
       </GestureHandlerRootView>
     </Drawer>
   );
@@ -677,17 +855,54 @@ const styles = StyleSheet.create({
   sheetHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+    alignItems: 'center',
     marginBottom: 10,
     marginTop: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 4, height: 6 },
+    shadowOpacity: 0.3,
+    shadowRadius: 5,
+    elevation: 6,
   },
   sheetTitle: {
     fontSize: 18,
     fontWeight: 'bold',
   },
+  rightContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  icon: {
+    width: 54,
+    height: 54,
+  },
   sheetBackButton: {
+    // color: '#555',
+    // fontSize: 16,
+    // fontWeight: 'bold',
+    //width: '100%',
+    backgroundColor: '#fff',
+    // shadowColor: '#000',
+    // shadowOffset: { width: 0, height: 2 },
+    // shadowOpacity: 0.3,
+    // shadowRadius: 13,
+    //     shadowColor: '#000',
+    // shadowOffset: { width: 4, height: 6 },
+    // shadowOpacity: 0.3,
+    // shadowRadius: 5,
+    // elevation: 6,
+    width: '100%',
+    height: 50,
+    borderRadius: 6,
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    flexDirection: 'row',
+  },
+  BackButton: {
     color: '#555',
     fontSize: 16,
     fontWeight: 'bold',
+    marginRight: 20,
   },
   optionButtonsContainer: {
     flexDirection: 'row',
@@ -926,5 +1141,94 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     resizeMode: 'contain',
+  },
+  photosContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    padding: 20,
+    flexWrap: 'wrap',
+  },
+  // photoPlaceholder: {
+  //   width: '45%',
+  //   height: 120,
+  //   borderWidth: 1,
+  //   borderColor: '#ccc',
+  //   borderRadius: 8,
+  //   marginBottom: 10,
+  //   justifyContent: 'center',
+  //   alignItems: 'center',
+  // },
+  photoUploadContainer: {
+    position: 'absolute',
+    top: '30%',
+    left: '5%',
+    right: '5%',
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 20,
+    alignItems: 'center',
+    zIndex: 9999,
+    elevation: 10,
+  },
+  photoUploadTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginBottom: 15,
+    textAlign: 'center',
+  },
+  photoRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 15,
+    width: '100%',
+  },
+  photoPlaceholder: {
+    width: 70,
+    height: 70,
+    borderRadius: 8,
+    backgroundColor: '#eee',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  photo: {
+    width: 70,
+    height: 70,
+    borderRadius: 8,
+    resizeMode: 'cover',
+  },
+  confirmButton: {
+    backgroundColor: '#FFD700',
+    paddingVertical: 12,
+    paddingHorizontal: 30,
+    borderRadius: 8,
+    marginBottom: 10,
+  },
+  confirmButtonText: {
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  cancelButton: {
+    backgroundColor: '#ccc',
+    paddingVertical: 12,
+    paddingHorizontal: 30,
+    borderRadius: 8,
+  },
+  cancelButtonText: {
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  disabledButton: {
+    backgroundColor: '#cccccc',
+  },
+  progressBar: {
+    height: 5,
+    backgroundColor: '#eee',
+    borderRadius: 3,
+    marginVertical: 10,
+  },
+  progressFill: {
+    height: '100%',
+    backgroundColor: '#4CAF50',
+    borderRadius: 3,
   },
 });

@@ -23,7 +23,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         return;
       }
 
-      if (response.body.role !== 'driver' /* && response.body.role !== 'admin'*/) {
+      if (response.body.role !== 'driver' /* && response.body.role !== 'admin' */) {
         console.log('Role do usuário:', response.body.role); 
         Alert.alert('Você não tem permissão para acessar essa página, precisa ser um motorista cadastrado.');
         return;
