@@ -8,6 +8,7 @@ import {
   Dimensions, 
   ScrollView, 
   Image, 
+  Linking,
   Alert 
 } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
@@ -23,9 +24,6 @@ import { useAuth } from '@/hooks/auth';
 import { useRides } from '@/hooks/rides'; 
 import * as ImagePicker from 'expo-image-picker';
 import { Ionicons } from '@expo/vector-icons';
-//import IconTruck from "@/assets/iconsride/truck"; 
-//import IconClient from "@/assets/iconsride/client";
-
 
 const { width, height } = Dimensions.get('window');
 const GOOGLE_MAPS_API_KEY = 'AIzaSyCgJspzdsVuS5w6P7eAXvzW3e8vCNDcpv0';
@@ -40,11 +38,6 @@ const isValidCoordinate = (coord: number) => {
 };
 
 export default function HomeScreen() {
-  // const truckPosition = {
-  //   userLocation.latitude,
-  //   userLocation.longitude
-  // };
-
   const router = useRouter();
   const { user } = useAuth();
   const { 
@@ -68,24 +61,48 @@ export default function HomeScreen() {
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
 
-  // const [photos, setPhotos] = useState<Array<{ uri: string } | null>>([
-  //   null,
-  //   null,
-  //   null,
-  //   null
-  // ]);
   const [photos, setPhotos] = useState<Array<{ uri: string } | null>>(
     Array(4).fill(null)
   );
 
   const statusBoxPosition = useRef(new Animated.Value(isAvailable ? 120 : 520)).current;
 
+  const openInWaze = (latitude: number, longitude: number) => {
+    const wazeUrl = `https://waze.com/ul?ll=${latitude},${longitude}&navigate=yes`;
+  
+    Linking.canOpenURL(wazeUrl)
+      .then((supported) => {
+        if (supported) {
+          Linking.openURL(wazeUrl);
+        } else {
+          Alert.alert('Erro', 'Waze não está instalado ou não pode ser aberto.');
+        }
+      })
+      .catch((err) => console.error('Erro ao tentar abrir o Waze:', err));
+  };
+  
+
+  // Adicionar no início do componente
+  useEffect(() => {
+    const errorHandler = (error: Error) => {
+      console.error('Erro não tratado:', error);
+      Alert.alert('Erro crítico', 'Ocorreu um erro inesperado. O app será reiniciado.');
+      router.replace('/');
+    };
+
+    // Capturar erros globais
+    ErrorUtils.setGlobalHandler(errorHandler);
+
+    return () => {
+      
+    };
+  }, []);
+
   useEffect(() => {
     if (ride?.id) {
       console.log('Corrida ativa:', ride);
     }
   }, [ride]);
-
 
   useEffect(() => {
     (async () => {
@@ -119,11 +136,12 @@ export default function HomeScreen() {
     }
   };
 
-  const handleSendPhotos = async (rideId: number) => {
+  const handleSendPhotos = async (rideId: number) => { 
     const validPhotos = photos.filter(photo => photo !== null);
-    
+  
     if (validPhotos.length < 4) {
-      throw new Error('Você precisa tirar 4 fotos antes de continuar.');
+      Alert.alert('Erro', 'Você precisa tirar 4 fotos antes de continuar.');
+      return;
     }
   
     const formData = new FormData();
@@ -131,34 +149,47 @@ export default function HomeScreen() {
     try {
       for (let i = 0; i < validPhotos.length; i++) {
         const photo = validPhotos[i]!;
-        const response = await fetch(photo.uri);
-        
-        if (!response.ok) throw new Error('Erro ao processar imagem');
-        
-        const blob = await response.blob();
-        formData.append(`photos[${i}]`, blob, `photo_${i}.jpg`);
+  
+        formData.append('photos', {
+          uri: photo.uri,
+          type: 'image/jpeg',
+          name: `photo_${i}.jpg`,
+        } as any);
       }
   
       const token = await AsyncStorage.getItem('token');
+      console.log('Token:', token);
+  
       const response = await fetch(`https://api.help-guincho.co/api/v1/rides/${rideId}/add-photos/`, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${token}`,
+          //'Authorization': `Token 36e28e5363e1d1ea85283c540b44dd7a584c5f2e`,
+          'Authorization': 'Token 36e28e5363e1d1ea85283c540b44dd7a584c5f2e',
+          'Accept': 'application/json',
         },
         body: formData,
       });
   
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Erro ao enviar fotos');
+      const responseText = await response.text();
+      console.log('Resposta da API:', responseText);
+      let responseData;
+      try {
+        responseData = JSON.parse(responseText);
+      } catch (jsonError) {
+        throw new Error(`A API não retornou um JSON válido: ${responseText}`);
       }
   
-      return await response.json();
+      if (!response.ok) {
+        throw new Error(responseData.message || 'Erro ao enviar fotos');
+      }
+  
+      return responseData;
     } catch (error: any) {
       console.error('Erro no upload:', error);
       throw new Error(error.message || 'Erro ao enviar fotos');
     }
   };
+  
 
   const handleConfirmPhotos = async () => {
     if (!activeRide) return;
@@ -183,19 +214,22 @@ export default function HomeScreen() {
               
               setShowDeliveryRoute(true);
               
-              mapRef.current?.fitToCoordinates([
-                { 
-                  latitude: userLocation!.latitude,
-                  longitude: userLocation!.longitude
-                },
-                { 
-                  latitude: activeRide.delivery_lat, 
-                  longitude: activeRide.delivery_long 
-                }
-              ], {
-                edgePadding: { top: 100, right: 100, bottom: 100, left: 100 },
-                animated: true
-              });
+              // Verifica se userLocation não é nulo
+              if (userLocation) {
+                mapRef.current?.fitToCoordinates([
+                  { 
+                    latitude: userLocation.latitude,
+                    longitude: userLocation.longitude
+                  },
+                  { 
+                    latitude: activeRide.delivery_lat, 
+                    longitude: activeRide.delivery_long 
+                  }
+                ], {
+                  edgePadding: { top: 100, right: 100, bottom: 100, left: 100 },
+                  animated: true
+                });
+              }
             }
           },
         ]
@@ -244,93 +278,130 @@ export default function HomeScreen() {
   };
 
   const mapRef = useRef<MapView>(null);
+  // useEffect(() => {
+  //   if (mapRef.current && userLocation) {
+  //     mapRef.current.animateToRegion({
+  //       ...userLocation,
+  //       latitudeDelta: 0.01,
+  //       longitudeDelta: 0.01,
+  //     }, 1000);
+  //   }
+  // }, [userLocation]);
 
-  const renderRoutes = () => {
-    if (!activeRide || !userLocation || isRouting) return null;
+  const renderMapElements = () => {
+    if (!activeRide || !userLocation || !userLocation.latitude || !userLocation.longitude) return null;
+  
+    const isValidRoute = (
+      originLat: number,
+      originLng: number,
+      destLat: number,
+      destLng: number
+    ) => {
+      return (
+        isValidCoordinate(originLat) &&
+        isValidCoordinate(originLng) &&
+        isValidCoordinate(destLat) &&
+        isValidCoordinate(destLng)
+      );
+    };
   
     return (
       <>
-        {!showDeliveryRoute && (
+        {!showDeliveryRoute && isValidRoute(
+          userLocation.latitude,
+          userLocation.longitude,
+          activeRide.pickup_lat,
+          activeRide.pickup_long
+        ) && (
           <>
-            {isValidCoordinate(activeRide?.pickup_lat) && 
-             isValidCoordinate(activeRide?.pickup_long) && (
-              <>
-                <MapViewDirections
-                  origin={userLocation}
-                  destination={{
-                    latitude: activeRide?.pickup_lat,
-                    longitude: activeRide?.pickup_long,
-                  }}
-                  apikey={GOOGLE_MAPS_API_KEY}
-                  strokeWidth={8}
-                  strokeColor="#FFD700"
-                  onReady={(result) => {
-                    console.log('Distance to pickup:', result.distance);
-                    setIsRouting(false);
-                  }}
-                  onError={(error) => {
-                    console.error('Error:', error);
-                    setIsRouting(false);
-                    Alert.alert('Erro', 'Não foi possível calcular a rota');
-                  }}
-                  onStart={() => setIsRouting(true)}
-                />
-                <Marker
-                  coordinate={{
-                    latitude: activeRide?.pickup_lat,
-                    longitude: activeRide?.pickup_long,
-                  }}
-                  title="Local de coleta"
-                >
-                  <Image 
-                    source={require('@/assets/images/pickupicon.png')} 
-                    style={styles.markerImage}
-                  />
-                </Marker>
-              </>
-            )}
+            <MapViewDirections
+              key={`route-${userLocation.latitude}-${userLocation.longitude}-${showDeliveryRoute}`}
+              origin={userLocation}
+              destination={{
+                latitude: activeRide.pickup_lat,
+                longitude: activeRide.pickup_long,
+              }}
+              apikey={GOOGLE_MAPS_API_KEY}
+              strokeWidth={6}
+              strokeColor="#FFD700"
+              onReady={() => setIsRouting(false)}
+              onError={(error) => {
+                console.error('Erro na rota:', error);
+                setIsRouting(false);
+              }}
+              onStart={() => setIsRouting(true)}
+              mode="DRIVING" // Adicionar modo explícito
+              precision="high" // Melhorar precisão
+              resetOnChange={false} // Prevenir recálculos desnecessários
+            />
+            <Marker
+              coordinate={{
+                latitude: activeRide.pickup_lat,
+                longitude: activeRide.pickup_long,
+              }}
+              title="Local de coleta"
+            >
+              <Image 
+                source={require('@/assets/images/pickupicon.png')} 
+                style={styles.markerImage}
+              />
+            </Marker>
           </>
         )}
   
-        {showDeliveryRoute && (
+        {showDeliveryRoute && isValidRoute(
+          userLocation.latitude,
+          userLocation.longitude,
+          activeRide.delivery_lat,
+          activeRide.delivery_long
+        ) && (
           <>
-            {isValidCoordinate(activeRide.delivery_lat) && 
-             isValidCoordinate(activeRide.delivery_long) && (
-              <>
-                <MapViewDirections
-                  origin={userLocation} 
-                  destination={{
+            <MapViewDirections
+              key={`route-${userLocation.latitude}-${userLocation.longitude}-${showDeliveryRoute}`}
+              origin={userLocation}
+              destination={{
+                latitude: activeRide.delivery_lat,
+                longitude: activeRide.delivery_long,
+              }}
+              apikey={GOOGLE_MAPS_API_KEY}
+              strokeWidth={8}
+              strokeColor="#FFD700"
+              onReady={() => {
+                setIsRouting(false);
+                // Forçar atualização do mapa após cálculo
+                mapRef.current?.fitToCoordinates([
+                  userLocation,
+                  {
                     latitude: activeRide.delivery_lat,
                     longitude: activeRide.delivery_long,
-                  }}
-                  apikey={GOOGLE_MAPS_API_KEY}
-                  strokeWidth={6}
-                  strokeColor="#32CD32"
-                  onReady={(result) => {
-                    console.log('Distance:', result.distance);
-                    setIsRouting(false);
-                  }}
-                  onError={(error) => {
-                    console.error('Error:', error);
-                    setIsRouting(false);
-                    Alert.alert('Erro', 'Não foi possível calcular a rota de entrega');
-                  }}
-                  onStart={() => setIsRouting(true)}
-                />
-                <Marker
-                  coordinate={{
-                    latitude: activeRide.delivery_lat,
-                    longitude: activeRide.delivery_long,
-                  }}
-                  title="Local de entrega"
-                >
-                  <Image 
-                    source={require('@/assets/images/deliveryicon.png')} 
-                    style={styles.markerImage}
-                  />
-                </Marker>
-              </>
-            )}
+                  }
+                ], {
+                  edgePadding: { top: 100, right: 100, bottom: 100, left: 100 },
+                  animated: true
+                });
+              }}
+              onError={(error) => {
+                console.error('Erro na rota:', error);
+                setIsRouting(false);
+                Alert.alert('Erro', 'Não foi possível calcular a rota de entrega');
+              }}
+              onStart={() => setIsRouting(true)}
+              mode="DRIVING"
+              precision="high"
+              resetOnChange={true}
+            />
+            <Marker
+              coordinate={{
+                latitude: activeRide.delivery_lat,
+                longitude: activeRide.delivery_long,
+              }}
+              title="Local de entrega"
+            >
+              <Image 
+                source={require('@/assets/images/deliveryhp.png')} 
+                style={styles.markerImage}
+              />
+            </Marker>
           </>
         )}
       </>
@@ -363,48 +434,44 @@ export default function HomeScreen() {
 
   const openSheet = (mode: 'conta' | 'historico') => {
     setSheetContent(mode);
-    bottomSheetRef.current?.snapToIndex(2);
+    bottomSheetRef.current?.snapToIndex(1);
   };
 
   const goBackToInitial = () => {
     setSheetContent('initial');
-    bottomSheetRef.current?.snapToIndex(1);
+    bottomSheetRef.current?.snapToIndex(0);
   };
 
   const handleLogout = async () => {
     await AsyncStorage.removeItem('token');
     router.replace('/LoginScreen');
   };
-
   useEffect(() => {
     let isMounted = true;
     let subscription: Location.LocationSubscription;
-
-    (async () => {
+  
+    const watchLocation = async () => {
       try {
         const { status } = await Location.requestForegroundPermissionsAsync();
         if (status !== 'granted' || !isMounted) return;
-
-        const getLocation = async () => {
-          const location = await Location.getCurrentPositionAsync({
-            accuracy: Location.Accuracy.High
-          });
-          
-          if (isMounted) {
-            const newLocation = {
-              latitude: location.coords.latitude,
-              longitude: location.coords.longitude
-            };
-            setUserLocation(newLocation);
-            if (!initialLocation) setInitialLocation(newLocation);
-          }
-        };
-
-        await getLocation();
+  
+        const initialLocation = await Location.getCurrentPositionAsync({
+          accuracy: Location.Accuracy.High,
+        });
+  
+        if (isMounted) {
+          setUserLocation(initialLocation.coords);
+          setInitialLocation(initialLocation.coords);
+        }
+  
         subscription = await Location.watchPositionAsync(
-          { accuracy: Location.Accuracy.High, distanceInterval: 10 },
+          {
+            accuracy: Location.Accuracy.Balanced,
+            distanceInterval: 50, 
+            timeInterval: 5000 
+          },
           (loc) => {
-            if (isMounted) {
+            if (isMounted && loc.coords) {
               setUserLocation({
                 latitude: loc.coords.latitude,
                 longitude: loc.coords.longitude
@@ -414,94 +481,23 @@ export default function HomeScreen() {
         );
       } catch (error) {
         console.error('Erro de localização:', error);
+        if (isMounted) {
+          Alert.alert('Erro', 'Não foi possível obter a localização');
+        }
       }
-    })();
-
+    };
+  
+    watchLocation();
+  
     return () => {
       isMounted = false;
       subscription?.remove();
+      setUserLocation(null);
+      setInitialLocation(null);
     };
   }, []);
 
-  const renderMapElements = () => {
-    if (!activeRide || !userLocation) return null;
-
-    return (
-      <>
-        {!showDeliveryRoute && (
-          <>
-            {isValidCoordinate(activeRide.pickup_lat) && 
-             isValidCoordinate(activeRide.pickup_long) && (
-              <MapViewDirections
-                origin={userLocation}
-                destination={{
-                  latitude: activeRide.pickup_lat,
-                  longitude: activeRide.pickup_long,
-                }}
-                apikey={GOOGLE_MAPS_API_KEY}
-                strokeWidth={6}
-                strokeColor="#FFD700"
-                onReady={() => setIsRouting(false)}
-                onError={(error) => {
-                  console.error('Erro na rota:', error);
-                  setIsRouting(false);
-                }}
-                onStart={() => setIsRouting(true)}
-              />
-            )}
-            <Marker
-              coordinate={{
-                latitude: activeRide.pickup_lat,
-                longitude: activeRide.pickup_long,
-              }}
-              title="Local de coleta"
-            >
-              <Image 
-                source={require('@/assets/images/pickupicon.png')} 
-                style={styles.markerImage}
-              />
-            </Marker>
-          </>
-        )}
-
-        {showDeliveryRoute && (
-          <>
-            {isValidCoordinate(activeRide.delivery_lat) && 
-             isValidCoordinate(activeRide.delivery_long) && (
-              <MapViewDirections
-                origin={userLocation}
-                destination={{
-                  latitude: activeRide.delivery_lat,
-                  longitude: activeRide.delivery_long,
-                }}
-                apikey={GOOGLE_MAPS_API_KEY}
-                strokeWidth={6}
-                strokeColor="#32CD32"
-                onReady={() => setIsRouting(false)}
-                onError={(error) => {
-                  console.error('Erro na rota:', error);
-                  setIsRouting(false);
-                }}
-                onStart={() => setIsRouting(true)}
-              />
-            )}
-            <Marker
-              coordinate={{
-                latitude: activeRide.delivery_lat,
-                longitude: activeRide.delivery_long,
-              }}
-              title="Local de entrega"
-            >
-              <Image 
-                source={require('@/assets/images/deliveryicon.png')} 
-                style={styles.markerImage}
-              />
-            </Marker>
-          </>
-        )}
-      </>
-    );
-  };
+  
 
   const renderSheetContent = () => {
     switch (sheetContent) {
@@ -690,22 +686,37 @@ export default function HomeScreen() {
         {/* BOTÃO GUINCHAR/CONCLUIR QUANDO HÁ CORRIDA ATIVA */}
         {activeRide && (
           <View style={styles.guincharContainer}>
-            <TouchableOpacity 
-              style={styles.guincharButton}
-              onPress={handleGuinchar}
-            >
-              <Text style={styles.guincharButtonText}>
-                {showDeliveryRoute ? 'Concluir Corrida' : 'Guinchar Veículo'}
-              </Text>
-            </TouchableOpacity>
+            <View style={styles.buttonRow}>
+              <TouchableOpacity 
+                style={styles.guincharButton}
+                onPress={handleGuinchar}
+              >
+                <Text style={styles.guincharButtonText}>
+                  {showDeliveryRoute ? 'Concluir Corrida' : 'Guinchar Veículo'}
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                onPress={() => openInWaze(
+                  showDeliveryRoute ? activeRide.delivery_lat : activeRide.pickup_lat,
+                  showDeliveryRoute ? activeRide.delivery_long : activeRide.pickup_long
+                )}
+                style={styles.wazeButton}
+              >
+                <Image
+                  source={require('@/assets/images/waze.png')}
+                  style={styles.wazeIcon}
+                />
+              </TouchableOpacity>
+            </View>
           </View>
         )}
 
-        {/* CAIXA FLUTUANTE DE FOTOS - SÓ EXIBE QUANDO showPhotoUpload = true */}
+        {/* CAIXA FLUTUANTE DE FOTOS */}
         {showPhotoUpload && (
           <View style={styles.photoUploadContainer}>
             <Text style={styles.photoUploadTitle}>
-              Para sua e nossa segurança tire 4 fotos do estado atual do veículo que está sendo guinchado
+              Para sua e nossa segurança, tire 4 fotos do estado atual do veículo que está sendo guinchado
             </Text>
             
             <View style={styles.photoRow}>
@@ -1123,20 +1134,52 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
     zIndex: 1000,
+    display: 'flex',
+    justifyContent: 'center',
   },
+  
+  buttonRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-evenly',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+  },
+  
   guincharButton: {
-    alignSelf: 'center',
     backgroundColor: '#FFC107',
     padding: 15,
     borderRadius: 25,
-    width: '90%',
+    flex: 1,
     alignItems: 'center',
+    marginRight: 10,
   },
   guincharButtonText: {
     fontSize: 18,
     fontWeight: 'bold',
     color: '#000',
   },
+
+  wazeButton: {
+    backgroundColor: '#3399FF',
+    padding: 5,
+    borderRadius: 15,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexDirection: 'row',
+    flex: 0.3,
+  },
+  
+  wazeIcon: {
+    width: 40,
+    height: 40,
+    resizeMode: 'contain',
+    // borderRadius: 25,
+    // alignItems: 'center',
+    // justifyContent: 'center',
+    // flexDirection: 'row',
+    // flex: 0.3,
+  },
+  
   markerImage: {
     width: 40,
     height: 40,
@@ -1184,7 +1227,7 @@ const styles = StyleSheet.create({
   },
   photoPlaceholder: {
     width: 70,
-    height: 70,
+    height: 100,
     borderRadius: 8,
     backgroundColor: '#eee',
     justifyContent: 'center',
@@ -1192,7 +1235,7 @@ const styles = StyleSheet.create({
   },
   photo: {
     width: 70,
-    height: 70,
+    height: 100,
     borderRadius: 8,
     resizeMode: 'cover',
   },
