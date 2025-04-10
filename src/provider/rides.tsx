@@ -10,6 +10,7 @@ import {
   Dimensions,
   Image,
   Animated,
+  Alert,
 } from 'react-native';
 import MapView, { Marker } from 'react-native-maps';
 import * as Location from 'expo-location';
@@ -183,6 +184,22 @@ export const RideProvider = ({ children }: { children: React.ReactNode }) => {
     })();
   }, []);
 
+  const ridesService = new RidesService()
+
+  const handleRecusarCorrida = async () => {
+    if (!ride?.id) return
+  
+    const response = await ridesService.updateRideStatus(ride.id, 'rejected')
+  
+    if (response.statusCode === 200) {
+      setRide(null)
+      Alert.alert('Corrida recusada com sucesso!')
+    } else {
+      Alert.alert('Erro ao recusar corrida')
+    }
+  }  
+  
+
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       {initialLocation && (
@@ -282,7 +299,7 @@ export const RideProvider = ({ children }: { children: React.ReactNode }) => {
                   </TouchableOpacity>
                   <TouchableOpacity
                     style={styles.rejectButton}
-                    onPress={() => setRide(null)}
+                    onPress={handleRecusarCorrida}
                   >
                     <Text style={styles.buttonText}>Recusar</Text>
                   </TouchableOpacity>
