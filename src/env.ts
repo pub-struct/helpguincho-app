@@ -1,0 +1,5 @@
+export const ENV = {
+  BASE_URL: 'https://api.help-guincho.co/api/v1',
+  BASE_URL_SOCKET: 'https://api.help-guincho.co',
+  GOOGLE_API_KEY: 'AIzaSyACjE76yJNuAdQ6cnY1ZEl1k2soEEZIhek',
+} as const

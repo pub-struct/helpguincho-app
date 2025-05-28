@@ -1,0 +1,17 @@
+const SOCKET_ON_RIDE = 'ride'
+const SOCKET_ON_ERROR = 'error'
+const SOCKET_ON_CONNECT = 'connect'
+const SOCKET_ON_DISCONNECT = 'disconnect'
+const SOCKET_ON_NOTIFICATION = 'notification'
+const SOCKET_ON_CONNECT_ERROR = 'connect_error'
+const SOCKET_ON_NOTIFICATION_HISTORY = 'notification_history'
+
+export {
+  SOCKET_ON_RIDE,
+  SOCKET_ON_ERROR,
+  SOCKET_ON_CONNECT,
+  SOCKET_ON_DISCONNECT,
+  SOCKET_ON_NOTIFICATION,
+  SOCKET_ON_CONNECT_ERROR,
+  SOCKET_ON_NOTIFICATION_HISTORY
+}
