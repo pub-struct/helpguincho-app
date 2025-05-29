@@ -15,6 +15,7 @@ export function FloatCardStart() {
     COLORS,
     visible,
     isAvailable,
+    BUTTON_WIDTH,
     animatedStyle,
     animatedTransform,
   } = useScreen()
@@ -30,9 +31,9 @@ export function FloatCardStart() {
               </Text>
             </Text>
 
-            <Text size={14} color='TEXT_2' style={{ marginBottom: 8 }}>
+            {/* <Text size={14} color='TEXT_2' style={{ marginBottom: 8 }}>
               Guinchos feitos hoje: X
-            </Text>
+            </Text> */}
 
             <Text size={13} color='PLACEHOLDER' style={{ marginBottom: 16 }}>
               {isAvailable
@@ -53,9 +54,14 @@ export function FloatCardStart() {
                   width: '100%',
                   height: '100%',
                   justifyContent: 'center',
+                  flexDirection: 'row',
                   alignItems: 'center'
                 }}
               >
+                {!isAvailable && (
+                  <View style={{ width: BUTTON_WIDTH }} />
+                )}
+
                 <Text
                   size={14}
                   weight='Bold_7'
@@ -63,6 +69,10 @@ export function FloatCardStart() {
                 >
                   {isAvailable ? 'Hora de descansar?' : 'Estou pronto pra trabalhar'}
                 </Text>
+
+                {isAvailable && (
+                  <View style={{ width: BUTTON_WIDTH }} />
+                )}
               </View>
 
               <Animated.View style={[styles.animatedBtn, animatedTransform]}>

@@ -5,7 +5,7 @@ import {
   socketOnError,
   socketOnRide,
   socketOnNotification,
-  socketOnNotificationHistory,
+  // socketOnNotificationHistory,
   socketEmitNotification
 } from '@/services/socket/Ride'
 import { useSocket } from '@/hooks/useSocket'
@@ -15,6 +15,7 @@ import { handleErrors } from '@/services/errors/ErrorHandler'
 import { finishRide, getRideDetails } from '../services/api'
 import { IRideDetails } from '@/@types/rides'
 import { TScreen } from '@/@types/navigation'
+import { useAuth } from '@/hooks/useAuth'
 
 
 export function useScreen(navParams: TScreen<'Home'>) {
@@ -24,8 +25,9 @@ export function useScreen(navParams: TScreen<'Home'>) {
   const [orderInfos, setOrderInfos] = useState<IRideDetails>({} as IRideDetails)
 
   const mapRef = useRef<MapView>(null)
-  const { socket, isConnected } = useSocket()
 
+  const { socket, isConnected } = useSocket()
+  const { user } = useAuth()
   const {
     eventListenerUserLocation,
     onUpdateFinishRide,
@@ -80,13 +82,13 @@ export function useScreen(navParams: TScreen<'Home'>) {
       socketOnNotification(socket, (data) => {
         console.log('NOTIFICATION ====>', data)
       })
-      socketOnNotificationHistory(socket, (data) => {
-        console.log('NOTIFICATION HISTORY ====>', data)
-      })
+      // socketOnNotificationHistory(socket, (data) => {
+      //   console.log('NOTIFICATION HISTORY ====>', data)
+      // })
       socketOnError(socket, (data) => {
         console.log('SOCKET ERROR ====>', data)
       })
-      // socketEmitNotification(socket)
+      socketEmitNotification(socket, { user_id: user.id, role: user.role })
     }
   }, [socket, isConnected])
 

@@ -1,5 +1,7 @@
 import { RootStackParamList } from '@/@types/navigation'
+import { DrawerLayout } from '@/layout/Drawer'
 import { Home } from '@/screens/Home'
+import { Profile } from '@/screens/Profile'
 import { createDrawerNavigator } from '@react-navigation/drawer'
 
 
@@ -11,10 +13,20 @@ export function AppRoutes() {
       screenOptions={{
         headerShown: false,
         drawerStatusBarAnimation: 'fade'
-        // animation: 'slide_from_bottom'
       }}
+      drawerContent={(props) => <DrawerLayout {...props} />}
     >
-      <Drawer.Screen name="Home" component={Home} />
+      <Drawer.Screen
+        name="Home"
+        component={Home}
+      />
+      <Drawer.Screen
+        name="Profile"
+        component={Profile}
+        options={{
+          drawerLabel: 'Conta'
+        }}
+      />
     </Drawer.Navigator>
   )
 }

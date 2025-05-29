@@ -1,13 +1,14 @@
 import { createContext, ReactNode, useState } from 'react'
 import { API } from '@/services/api/config'
+import { IUser } from '@/@types/User'
 
 
 interface IAuthContext {
   isAuthenticated: boolean
-  deleteAuth: () => Promise<void>
-  onUpdateUser: (data: unknown) => void
-  updateAuth: (token: string) => Promise<void>
-  user: unknown
+  deleteAuth(): Promise<void>
+  onUpdateUser(data: IUser): void
+  onUpdateAuth(token: string): void
+  user: IUser
 }
 interface IProvider {
   children: ReactNode
@@ -17,26 +18,26 @@ export const AuthContext = createContext<IAuthContext>({} as IAuthContext)
 
 export function AuthProvider({ children }: IProvider) {
   const [isAuth, setIsAuth] = useState<boolean>(false)
-  const [user, setUser] = useState(null)
+  const [user, setUser] = useState<IUser>({} as IUser)
 
-  async function updateAuth(token: string) {
-    setIsAuth(true)
-    API.defaults.headers.common.Authorization = `Token ${token}`
-  }
   async function deleteAuth() {
     setIsAuth(false)
     API.defaults.headers.common.Authorization = ''
   }
 
-  function onUpdateUser(data: unknown) {
-    // setUser(data)
+  function onUpdateAuth(token: string) {
+    API.defaults.headers.common.Authorization = `Token ${token}`
+    setIsAuth(true)
+  }
+  function onUpdateUser(data: IUser) {
+    setUser(data)
   }
 
   const value = {
     isAuthenticated: isAuth,
     onUpdateUser,
     deleteAuth,
-    updateAuth,
+    onUpdateAuth,
     user
   }
 

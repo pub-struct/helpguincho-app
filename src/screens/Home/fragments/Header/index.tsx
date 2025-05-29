@@ -3,6 +3,7 @@ import { styles } from './styles'
 import { Button } from '@/components/Button'
 import { Text } from '@/components/Text'
 import { Feather } from '@expo/vector-icons'
+import { useAuth } from '@/hooks/useAuth'
 
 
 interface IProps {
@@ -11,6 +12,7 @@ interface IProps {
 
 export function Header(props: IProps) {
   const { onOpenDrawer } = props
+  const { user } = useAuth()
 
   return (
     <View style={styles.header}>
@@ -22,7 +24,7 @@ export function Header(props: IProps) {
       </Button>
 
       <Button disabled style={{ width: '70%', borderTopRightRadius: 0 }}>
-        <Text>Bem-vindo, Usuário</Text>
+        <Text numberOfLines={1}>Bem-vindo, {user.username}</Text>
       </Button>
     </View>
   )

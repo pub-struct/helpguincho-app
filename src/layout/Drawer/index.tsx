@@ -1,36 +1,26 @@
-import { ReactNode } from 'react'
-import { View } from 'react-native'
-import { Drawer } from 'react-native-drawer-layout'
-import { styles } from './styles'
 import { Button } from '@/components/Button'
+import { useAuth } from '@/hooks/useAuth'
+import {
+  DrawerContentComponentProps,
+  DrawerContentScrollView,
+  DrawerItemList,
+} from '@react-navigation/drawer'
+import { View } from 'react-native'
 
 
-interface IProps {
-  children: ReactNode
-  open: boolean
-  onOpen: VoidFunction
-  onClose: VoidFunction
-}
+export function DrawerLayout(props: DrawerContentComponentProps) {
+  const { deleteAuth } = useAuth()
 
-export function DrawerLayout(props: IProps) {
-  const { children, onClose, onOpen, open } = props
   return (
-    <Drawer
-      open={open}
-      onOpen={onOpen}
-      onClose={onClose}
-      drawerType='front'
-      // eslint-disable-next-line react-native/no-color-literals
-      drawerStyle={{ backgroundColor: 'transparent' }}
-      renderDrawerContent={() => (
-        <View style={styles.drawerContainer}>
-          <Button title='Gerar Recibo' />
-
-          <Button variant='outline' title='Sair' />
-        </View>
-      )}
+    <DrawerContentScrollView
+      contentContainerStyle={{ flexGrow: 1, justifyContent: 'space-between' }}
+      {...props}
     >
-      {children}
-    </Drawer>
+      <View>
+        <DrawerItemList {...props} />
+      </View>
+
+      <Button title='Sair' variant='outline' onPress={deleteAuth} />
+    </DrawerContentScrollView>
   )
 }

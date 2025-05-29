@@ -1,58 +1,65 @@
 import { Input } from '@/components/Input'
 import { Text } from '@/components/Text'
+import { useAuth } from '@/hooks/useAuth'
 import { View } from 'react-native'
 
 
 export function UserInfos() {
+  const { user } = useAuth()
+
   return (
-    <View style={{ paddingHorizontal: 20, marginTop: 20 }}>
+    <View style={{ paddingHorizontal: 20, marginTop: 10 }}>
       <Text weight='Bold_7'>Informações pessoais</Text>
 
       <View style={{ marginTop: 10 }}>
         <Input
           label='Nome'
-          value='Vinicius Celestino'
+          value={user.full_name}
           readOnly
           editable={false}
         />
         <Input
           label='E-mail'
-          value='vinigtr386@gmail.com'
+          value={user.email}
           readOnly
           editable={false}
         />
-        {/* <Input
+        <Input
           label='CNH'
-          value='A / B'
+          value={user.cnh}
           readOnly
           editable={false}
         />
         <Input
           label='Telefone'
-          value='(19) 98310-0871'
-          readOnly
-          editable={false}
-        /> */}
-      </View>
-
-      <Text weight='Bold_7'>Guincho</Text>
-
-      <View style={{ marginTop: 10 }}>
-        <Input
-          label='Cor'
-          value='Branco'
+          value={user.phone}
           readOnly
           editable={false}
         />
+      </View>
+
+      <Text weight='Bold_7'>
+        Guincho - {user.vehicle.is_active ? 'Ativo' : 'Desativo'}
+      </Text>
+
+      <View style={{ marginTop: 10 }}>
         <Input
-          label='Placa'
-          value='XXX-XXXX'
+          label='Marca'
+          value={user.vehicle.brand}
           readOnly
           editable={false}
         />
         <Input
           label='Modelo'
-          value='Branco'
+          value={user.vehicle.model + ' - ' + user.vehicle.year}
+          readOnly
+          numberOfLines={4}
+          multiline
+          editable={false}
+        />
+        <Input
+          label='Placa'
+          value={user.vehicle.plate}
           readOnly
           editable={false}
         />

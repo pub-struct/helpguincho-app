@@ -11,7 +11,7 @@ export const styles = (editable?: boolean) => Styler(({ COLORS }) => {
     },
     container: {
       width: '100%',
-      height: MIN_HEIGHT,
+      minHeight: MIN_HEIGHT,
       paddingHorizontal: 12,
       borderRadius: 5,
       borderWidth: 1,
@@ -23,13 +23,13 @@ export const styles = (editable?: boolean) => Styler(({ COLORS }) => {
     iconContainer: {
       justifyContent: 'center',
       alignItems: 'center',
-      height: MIN_HEIGHT
+      minHeight: MIN_HEIGHT
     },
     input: {
       flex: 1,
       fontFamily: 'Lexend_400',
       fontSize: 16,
-      height: MIN_HEIGHT,
+      minHeight: MIN_HEIGHT,
       color: COLORS[editable ? 'TEXT' : 'PLACEHOLDER']
     }
   }

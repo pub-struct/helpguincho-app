@@ -9,10 +9,10 @@ import { useAuth } from '@/hooks/useAuth'
 import { TFormData } from '../types'
 import { yupResolver } from '@hookform/resolvers/yup'
 import { schema } from '../schema'
-import * as api from '@/services/api/Auth'
 import { handleErrors } from '@/services/errors/ErrorHandler'
 import { useState } from 'react'
 import { storageSetToken } from '@/services/storage/Auth'
+import { login } from '../services/api'
 
 
 export function Login() {
@@ -22,17 +22,18 @@ export function Login() {
     resolver: yupResolver(schema)
   })
 
-  const { updateAuth } = useAuth()
+  const { onUpdateAuth, onUpdateUser } = useAuth()
 
   const { SVGS } = IMAGES
 
   async function onSubmit(data: TFormData) {
     try {
       setIsLoading(true)
-      const response = await api.login(data)
+      const response = await login(data)
 
       await storageSetToken(response.token)
-      await updateAuth(response.token)
+      onUpdateUser(response.factoryData)
+      onUpdateAuth(response.token)
     } catch (error) {
       handleErrors(error)
     } finally {
