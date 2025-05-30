@@ -7,7 +7,7 @@ import { IOrderModalProps } from '.'
 
 export function useScreen(props: IOrderModalProps) {
   const { visible, onClose, onUpdateMap, ...rest } = props
-
+  // console.log(JSON.stringify(rest, null, 2))
   const [isLoading, setIsLoading] = useState<boolean>(true)
   const { userLocation, onUpdateRide, getPolyline } = useRide()
 
@@ -28,7 +28,7 @@ export function useScreen(props: IOrderModalProps) {
       setIsLoading(true)
       await acceptRide(rest.id)
 
-      const { origem, destino } = await getPolyline(
+      const { origem, destino, km, time } = await getPolyline(
         {
           latitude: userLocation?.latitude || 0,
           longitude: userLocation?.longitude || 0
@@ -39,7 +39,7 @@ export function useScreen(props: IOrderModalProps) {
         }
       )
       onUpdateMap(origem, destino)
-      onUpdateRide(rest)
+      onUpdateRide({ ...rest, km, time })
       onClose()
     } catch (error) {
       handleErrors(error)

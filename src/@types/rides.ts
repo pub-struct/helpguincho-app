@@ -40,8 +40,8 @@ export interface IRideDetails {
   delivery_long: number
   driver_lat: number
   driver_long: number
-  pickup_time: string
-  delivery_time: string
+  pickup_time: string | null
+  delivery_time: string | null
   price: string
   km: number
   service: 'private'
@@ -109,4 +109,11 @@ export interface IRideState {
   delivery_address: string | 'none'
   delivery_lat: number
   delivery_long: number
+  km: string
+  time: number
+}
+
+export type TUpdateRideState = Omit<IRideDetails, 'km'> & {
+  km: string
+  time: number
 }

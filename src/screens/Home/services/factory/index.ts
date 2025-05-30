@@ -44,7 +44,7 @@ export function factoryRide(data: IRideDetailsDTO): IRideDetails {
     vehicle: data.client.vehicle || 'none',
     plate: data.client.plate || 'none',
   } satisfies IClient
-
+  // console.log('RIDE DETAIL ===>', JSON.stringify(data, null, 2))
   return {
     id: data.id || 0,
     driver,
@@ -64,8 +64,8 @@ export function factoryRide(data: IRideDetailsDTO): IRideDetails {
     delivery_long: data.delivery_long || 0,
     driver_lat: data.driver_lat || 0,
     driver_long: data.driver_long || 0,
-    pickup_time: data.pickup_time || '',
-    delivery_time: data.delivery_time || '',
+    pickup_time: data.pickup_time === null ? null : data.pickup_time || '',
+    delivery_time: data.delivery_time === null ? null : data.delivery_time || '',
     price: data.price || '0',
     km: data.km || 0,
     service: data.service || 'none',

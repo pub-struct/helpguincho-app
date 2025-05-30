@@ -1,5 +1,5 @@
 import { View, StyleSheet, ActivityIndicator } from 'react-native'
-import MapView, { Marker, Polyline, PROVIDER_DEFAULT, PROVIDER_GOOGLE } from 'react-native-maps'
+import MapView, { Marker, Polyline, PROVIDER_DEFAULT } from 'react-native-maps'
 import { SafeArea } from '@/components/SafeArea'
 import { Header } from '../fragments/Header'
 import { FloatCardStart } from '../fragments/FloatCardStart'
@@ -11,6 +11,7 @@ import { TScreen } from '@/@types/navigation'
 import { styles } from './styles'
 import { useScreen } from './useScreen'
 import { Text } from '@/components/Text'
+
 
 export function Home(navParams: TScreen<'Home'>) {
   const {
@@ -74,7 +75,13 @@ export function Home(navParams: TScreen<'Home'>) {
           />
         )}
 
-        {route.length > 0 && <Polyline coordinates={route} strokeWidth={4} strokeColor="blue" />}
+        {route.length > 0 && (
+          <Polyline
+            coordinates={route}
+            strokeWidth={4}
+            strokeColor="blue"
+          />
+        )}
       </MapView>
 
       <SafeArea>
@@ -86,11 +93,15 @@ export function Home(navParams: TScreen<'Home'>) {
 
         {/* <Button title='TESTE' onPress={onTestRide} /> */}
         {!isRideActive && <FloatCardStart />}
-
         {isRideActive && <StartGPS onUpdateMap={onUpdateMap} onFinish={onFinish} />}
       </SafeArea>
 
-      <OrderModal visible={orderVisible} onClose={handleOrderVisible} onUpdateMap={onUpdateMap} {...orderInfos} />
+      <OrderModal
+        visible={orderVisible}
+        onClose={handleOrderVisible}
+        onUpdateMap={onUpdateMap}
+        {...orderInfos}
+      />
     </View>
   )
 }

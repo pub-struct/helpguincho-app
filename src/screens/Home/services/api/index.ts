@@ -19,10 +19,14 @@ interface IParams {
 
 export async function getRoutePolyline(params: IParams) {
   const response = await tryGetRouteGoogleDetails(params)
+  // console.log('ROTAS ====>', JSON.stringify(response, null, 2))
+  const km = response.routes[0].legs[0].distance.text as string
+  const time = response.routes[0].legs[0].duration.value as number
+
   const pontos = polyline.decode(response.routes[0].overview_polyline.points)
   const coordenadas = pontos.map(([lat, lng]) => ({ latitude: lat, longitude: lng }))
 
-  return coordenadas
+  return { coordenadas, km, time }
 }
 
 export async function getRideDetails(rideId: number) {

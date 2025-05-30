@@ -16,9 +16,9 @@ export interface IResultRides {
   description: string
   status: string
   created_at: string
-  updated_at: string
-  accepted_at: string
-  completed_at: string
+  updated_at: string | null
+  accepted_at: string | null
+  completed_at: string | null
   pickup_location: string
   pickup_lat: number
   pickup_long: number

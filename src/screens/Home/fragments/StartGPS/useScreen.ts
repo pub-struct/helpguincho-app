@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useRide } from '@/hooks/useRide'
 import { openMap } from '../../utils/openMap'
 import { IStartGPSProps } from '.'
+import { THEME } from '@/theme'
 
 
 export function useScreen(props: IStartGPSProps) {
@@ -10,7 +11,7 @@ export function useScreen(props: IStartGPSProps) {
   const [visible, setVisible] = useState<boolean>(false)
   const [isButtonVisible, setIsButtonVisible] = useState<boolean>(false)
   const [isLoading, setIsLoading] = useState<boolean>(false)
-
+  const { COLORS } = THEME
   const {
     ride,
     rideCoords,
@@ -52,6 +53,8 @@ export function useScreen(props: IStartGPSProps) {
   }
 
   return {
+    ride,
+    COLORS,
     visible,
     isLoading,
     isButtonVisible,

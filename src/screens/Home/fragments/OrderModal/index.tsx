@@ -35,7 +35,7 @@ export function OrderModal(props: IOrderModalProps) {
           transparent
         >
           <View style={styles.overlay}>
-            <View style={styles.content}>
+            <View style={[styles.content, { height: 150 }]}>
               <Text weight='Medium_5' color='RED'>Carregando...</Text>
             </View>
           </View>
@@ -112,7 +112,7 @@ export function OrderModal(props: IOrderModalProps) {
               </Text>
             </View> */}
 
-            <Text size={12} weight='Medium_5'>
+            <Text size={12} weight='Medium_5' style={{ marginTop: 8 }}>
               Localização do veiculo:
             </Text>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5, marginBottom: 15 }}>
@@ -120,7 +120,7 @@ export function OrderModal(props: IOrderModalProps) {
                 name='map'
                 size={15}
               />
-              <Text size={12} weight='Medium_5'>
+              <Text style={{ flex: 1 }} size={12} weight='Medium_5'>
                 {rest.pickup_location === 'none' ? 'Não informado' : rest.pickup_location}
               </Text>
             </View>
@@ -133,7 +133,7 @@ export function OrderModal(props: IOrderModalProps) {
                 name='map-pin'
                 size={15}
               />
-              <Text size={12} weight='Medium_5'>
+              <Text style={{ flex: 1 }} size={12} weight='Medium_5'>
                 {rest.delivery_address === 'none' ? 'Não informado' : rest.delivery_address}
               </Text>
             </View>
@@ -146,7 +146,7 @@ export function OrderModal(props: IOrderModalProps) {
                 name='chatbubbles-outline'
                 size={15}
               />
-              <Text size={12} weight='Medium_5'>
+              <Text style={{ flex: 1 }} size={12} weight='Medium_5'>
                 {rest.description === 'none' ? 'Não informado' : rest.description}
               </Text>
             </View>

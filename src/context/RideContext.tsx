@@ -1,4 +1,4 @@
-import { IRideDetails, IRideState } from '@/@types/rides'
+import { IRideState, TUpdateRideState } from '@/@types/rides'
 import { getRoutePolyline } from '@/screens/Home/services/api'
 import { rethrowIfAppError } from '@/services/errors/rethrowIfAppError'
 import { getLocationPermission } from '@/utils/permissions/location'
@@ -23,8 +23,8 @@ interface IContext {
   onUpdateFinishRide(): void
   eventListenerUserLocation(): Promise<void>
   getInitialInfos(): Promise<LocationObject | null>
-  onUpdateRide(rideData: IRideDetails): void
-  getPolyline(origem: ILocation, destino: ILocation): Promise<{origem: ILocation; destino: ILocation}>
+  onUpdateRide(rideData: TUpdateRideState): void
+  getPolyline(origem: ILocation, destino: ILocation): Promise<{origem: ILocation; destino: ILocation; km: string; time: number}>
 }
 
 export const RideContext = createContext<IContext>({} as IContext)
@@ -38,6 +38,8 @@ const defaultRideValue: IRideState = {
   delivery_address: 'none',
   delivery_lat: 0,
   delivery_long: 0,
+  km: '',
+  time: 0
 }
 
 export function RideProvider({ children }: IProvider) {
@@ -85,11 +87,11 @@ export function RideProvider({ children }: IProvider) {
   }
   async function getPolyline(origem: ILocation, destino: ILocation) {
     try {
-      const rotas = await getRoutePolyline({ destino, origem })
+      const { coordenadas, km, time } = await getRoutePolyline({ destino, origem })
       setRideCoords(destino)
-      setRoute(rotas)
+      setRoute(coordenadas)
 
-      return { origem, destino }
+      return { origem, destino, km, time }
     } catch (error) {
       throw rethrowIfAppError(error)
     }
@@ -106,7 +108,7 @@ export function RideProvider({ children }: IProvider) {
     setRideCoords(null)
     setRoute([])
   }
-  function onUpdateRide(rideData: IRideDetails) {
+  function onUpdateRide(rideData: TUpdateRideState) {
     setRide({
       id: rideData.id,
       status: rideData.status,
@@ -116,6 +118,8 @@ export function RideProvider({ children }: IProvider) {
       delivery_address: rideData.delivery_address,
       delivery_lat: rideData.delivery_lat,
       delivery_long: rideData.delivery_long,
+      km: rideData.km,
+      time: rideData.time
     })
   }
 

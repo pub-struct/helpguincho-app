@@ -63,9 +63,15 @@ export function factory(data: IHistoryRidesDTO): IHistoryRides {
       description: item.description || 'none',
       status: item.status || 'none',
       created_at: item.created_at || '0000-00-00T00:00:00.000000Z',
-      updated_at: item.updated_at || '0000-00-00T00:00:00.000000Z',
-      accepted_at: item.accepted_at || '0000-00-00T00:00:00.000000Z',
-      completed_at: item.completed_at || '0000-00-00T00:00:00.000000Z',
+      updated_at: item.updated_at === null
+        ? null
+        : item.updated_at || '0000-00-00T00:00:00.000000Z',
+      accepted_at: item.accepted_at === null
+        ? null
+        : item.accepted_at || '0000-00-00T00:00:00.000000Z',
+      completed_at: item.completed_at === null
+        ? null
+        : item.completed_at || '0000-00-00T00:00:00.000000Z',
       pickup_location: item.pickup_location || 'none',
       pickup_lat: item.pickup_lat || 0,
       pickup_long: item.pickup_long || 0,
