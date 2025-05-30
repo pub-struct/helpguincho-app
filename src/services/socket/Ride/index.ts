@@ -21,7 +21,7 @@ import { Socket } from 'socket.io-client'
 export function socketOnRide(socket: Socket, payload: (data: ISocketRide) => void) {
   socket.on(SOCKET_RIDE, payload)
 }
-export function socketOnNotification(socket: Socket, payload: (data: unknown) => void) {
+export function socketOnNotification(socket: Socket, payload: (data: { message: string}) => void) {
   socket.on(SOCKET_NOTIFICATION, payload)
 }
 export function socketOnNotificationHistory(socket: Socket, payload: (data: unknown) => void) {

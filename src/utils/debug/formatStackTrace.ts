@@ -15,9 +15,13 @@ function cleanFileName(file?: string | null) {
   if (!file) return ''
 
   return file
+    .replace(/^.*?index\.ts\.bundle\/?/, '') // Remove index.ts.bundle e tudo antes
     .replace(/^http:\/\/.*?\//, '') // Remove http://192.168.x.x:8081/
     .replace(/^node_modules\/expo\/AppEntry\.bundle\/?/, '') // Remove node_modules/expo/AppEntry.bundle/
+    .replace(/^node_modules\/expo\/AppEntry\.bundle\/?/, '') // Expo entry
+    .replace(/^\/+/, '') // Remove barras duplicadas no início
     .replace(/^\/&platform.*$/, '') // Remove lixo tipo /&platform=android...
+    .replace(/&platform.*$/, '') // Remove params do Metro
     .replace(/\?.*$/, '') // Remove qualquer query string que sobrar
 }
 
@@ -48,11 +52,19 @@ export function formatStackTrace(
 
   const parsed = parse(stack)
 
+  const seen = new Set<string>()
   const formattedStack = parsed
     .filter(frame => {
       if (!frame.file) return false
       if (includeNodeModules) return true
       return !frame.file.includes('node_modules')
+    })
+    .filter(frame => {
+    // Remove duplicados baseando-se em file + method + line
+      const key = `${frame.file}-${frame.methodName}-${frame.lineNumber}`
+      if (seen.has(key)) return false
+      seen.add(key)
+      return true
     })
     .map(frame => {
       const file = cleanFileName(frame.file)

@@ -35,8 +35,6 @@ export function Profile() {
         <Header
           title='Perfil'
           backButton
-          iconRight='refresh-ccw'
-          onActionRight={onActionRight}
         />
 
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>

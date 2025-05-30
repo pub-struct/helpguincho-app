@@ -43,9 +43,9 @@ export function handleErrors(error: unknown) {
   const typedError =
     error instanceof BaseError
       ? error
-      : new BaseError(errorTyped.message, 'ERRO DESCONHECIDO', dataUnknownErrors, error)
+      : new BaseError(errorTyped.message || 'ERRO SEM MENSAGEM', 'ERRO DESCONHECIDO', dataUnknownErrors, error)
 
-  // loggerErrors(typedError, dataUnknownErrors)
+  loggerErrors(typedError, dataUnknownErrors)
 
   return typedError
 }
@@ -55,12 +55,12 @@ function unknownErrors(error: unknown) {
   // eslint-disable-next-line tseslint/no-explicit-any
   const typedError = error as any
   const JSON1 = JSON.stringify(typedError, null, 2)
-  const JSON2 = JSON.stringify(typedError.message, null, 2)
-  const JSON3 = JSON.stringify(typedError.response, null, 2)
+  const JSON2 = JSON.stringify(typedError.message || 'ERRO SEM MENSAGEM', null, 2)
+  const JSON3 = JSON.stringify(typedError.response || 'ERRO SEM MENSAGEM', null, 2)
 
   Alert.alert(
     'Erro',
-    `ERROR_1: ${JSON1}, ERROR_2: ${JSON2}`,
+    `ERROR_1: ${JSON1}, ERROR_2: ${JSON2}, ERROR_3: ${JSON3}`,
     [{
       onPress: () => {
         Toast.show({

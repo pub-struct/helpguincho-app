@@ -13,7 +13,7 @@ import { Dimensions } from 'react-native'
 
 const { height, width } = Dimensions.get('window')
 const initialStatusBox = height / 3
-const finalStatusBox = height / 1.51
+const finalStatusBox = height / 1.4
 const BUTTON_WIDTH = 50
 const PADDING_CONTAINER = 26
 const BORDER_WIDTH = 1
@@ -58,31 +58,6 @@ export function useScreen() {
     positionX.value = initialPositionX
     disconnectSocket()
   }
-
-
-  //   if (sheetContent === 'historico') {
-  //     return (
-  //       <View style={{ flex: 1 }}>
-  //         <View style={{ paddingHorizontal: 20 }}>
-  //           <TouchableOpacity style={styles.sheetHeader} onPress={onBackSheet}>
-  //             <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-  //               <Image
-  //                 source={require('@/assets/images/historico.png')}
-  //                 style={{ height: 50, width: 50 }}
-  //               />
-  //               <Text style={{ marginLeft: 8 }}>Histórico</Text>
-  //             </View>
-  //             <Text>Voltar</Text>
-  //           </TouchableOpacity>
-  //         </View>
-
-  //         <ScrollView contentContainerStyle={{ padding: 20, flexGrow: 1 }}>
-  //           <Historic />
-  //         </ScrollView>
-  //       </View>
-  //     )
-  //   }
-  // }
 
   useEffect(() => {
     statusBoxPosition.value = withTiming(isAvailable ? finalStatusBox : initialStatusBox, config)

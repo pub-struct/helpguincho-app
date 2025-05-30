@@ -65,13 +65,13 @@ export async function loggerErrors(error: BaseError, context: ErrorMetadata) {
   // }
 }
 
-interface IParams {
-  context: ErrorMetadata
-  error: BaseError
-  timestamp: string
-  UUID: string
-  username: string
-}
+// interface IParams {
+//   context: ErrorMetadata
+//   error: BaseError
+//   timestamp: string
+//   UUID: string
+//   username: string
+// }
 
 // async function saveLogToFile(params: IParams) {
 //   const { UUID, error, context, timestamp, username } = params

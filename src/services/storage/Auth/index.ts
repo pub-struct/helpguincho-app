@@ -13,5 +13,5 @@ export async function storageGetToken() {
   const data = await storage.getItem(STORAGE_TOKEN)
   const res = data ? JSON.parse(data) : ''
 
-  return res
+  return res as string
 }

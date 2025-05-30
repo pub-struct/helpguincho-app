@@ -1,43 +1,87 @@
-import { createContext, ReactNode, useState } from 'react'
+import { createContext, ReactNode, useEffect, useState } from 'react'
 import { API } from '@/services/api/config'
 import { IUser } from '@/@types/User'
+import { storageGetToken, storageSetToken } from '@/services/storage/Auth'
+import { handleErrors } from '@/services/errors/ErrorHandler'
+import * as SplashScreen from 'expo-splash-screen'
+import { validateAccessToken } from '@/services/api/Auth'
 
 
 interface IAuthContext {
-  isAuthenticated: boolean
+  isAuthenticated: TAuthVar
   deleteAuth(): Promise<void>
   onUpdateUser(data: IUser): void
-  onUpdateAuth(token: string): void
+  onAuthenticate(token: string): Promise<void>
   user: IUser
 }
 interface IProvider {
   children: ReactNode
+  fontsLoaded: boolean
 }
+type TAuthVar = 'LOGGED' | 'UNLOGGED' | 'LOADING'
 
 export const AuthContext = createContext<IAuthContext>({} as IAuthContext)
 
-export function AuthProvider({ children }: IProvider) {
-  const [isAuth, setIsAuth] = useState<boolean>(false)
+export function AuthProvider({ children, fontsLoaded }: IProvider) {
+  const [isAuthenticated, setIsAuthenticated] = useState<TAuthVar>('LOADING')
+  const [control, setControl] = useState<boolean>(false)
   const [user, setUser] = useState<IUser>({} as IUser)
 
+  const onUpdateUser = (data: IUser) => setUser(data)
+  const hideSplash = async () => await SplashScreen.hideAsync()
+
+  async function onAuthenticate(token: string) {
+    API.defaults.headers.common.Authorization = `Token ${token}`
+    setIsAuthenticated('LOGGED')
+    await storageSetToken(token)
+  }
   async function deleteAuth() {
-    setIsAuth(false)
+    setIsAuthenticated('UNLOGGED')
     API.defaults.headers.common.Authorization = ''
+    await storageSetToken('')
+  }
+  async function getInfosFromDevice() {
+    try {
+      const tokenDevice = await storageGetToken()
+      if (!tokenDevice) {
+        setIsAuthenticated('UNLOGGED')
+        return
+      }
+
+      const { factoryData, token } = await validateAccessToken(tokenDevice)
+
+      const isTokenValid = token !== 'none'
+
+      if (isTokenValid) {
+        await onAuthenticate(tokenDevice)
+        onUpdateUser(factoryData)
+        return
+      }
+      setIsAuthenticated('UNLOGGED')
+    } catch (error) {
+      handleErrors(error)
+      setIsAuthenticated('UNLOGGED')
+    } finally {
+      setControl(true)
+    }
   }
 
-  function onUpdateAuth(token: string) {
-    API.defaults.headers.common.Authorization = `Token ${token}`
-    setIsAuth(true)
-  }
-  function onUpdateUser(data: IUser) {
-    setUser(data)
-  }
+  useEffect(() => {
+    getInfosFromDevice()
+  }, [])
+  useEffect(() => {
+    if (!fontsLoaded) return
+    if (isAuthenticated === 'LOADING') return
+    if (!control) return
+
+    hideSplash()
+  }, [fontsLoaded, isAuthenticated, control])
 
   const value = {
-    isAuthenticated: isAuth,
+    isAuthenticated,
     onUpdateUser,
     deleteAuth,
-    onUpdateAuth,
+    onAuthenticate,
     user
   }
 

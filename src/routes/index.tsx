@@ -2,17 +2,18 @@ import React from 'react'
 import { NavigationContainer } from '@react-navigation/native'
 import { AppRoutes } from './app.routes'
 import { Login } from '@/screens/Login/screen'
-import { LayoutChangeEvent, View } from 'react-native'
+import { View } from 'react-native'
 import Toast, { BaseToast, ErrorToast, ToastProps, InfoToast } from 'react-native-toast-message'
 import { THEME } from '@/theme'
 import { useAuth } from '@/hooks/useAuth'
+import { Loading } from '@/components/Loading'
 
 
-interface IRoute {
-  onLayout(event: LayoutChangeEvent): void
-}
+// interface IRoute {
+//   onLayout(event: LayoutChangeEvent): void
+// }
 
-export function Routes(props: IRoute) {
+export function Routes() {
   const { isAuthenticated } = useAuth()
 
   const toastConfig = {
@@ -87,13 +88,17 @@ export function Routes(props: IRoute) {
     )
   }
 
+  if (isAuthenticated === 'LOADING') {
+    return <Loading />
+  }
+
   return (
     <View
       style={{ flex: 1, backgroundColor: THEME.COLORS.BACKGROUND }}
       // onLayout={props.onLayout}
     >
       <NavigationContainer>
-        {isAuthenticated ? <AppRoutes /> : <Login />}
+        {isAuthenticated === 'LOGGED' ? <AppRoutes /> : <Login />}
       </NavigationContainer>
 
       <Toast config={toastConfig} />

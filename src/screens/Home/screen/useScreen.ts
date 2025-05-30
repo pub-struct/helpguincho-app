@@ -2,10 +2,8 @@ import { useEffect, useRef, useState } from 'react'
 import MapView from 'react-native-maps'
 import { useRide } from '@/hooks/useRide'
 import {
-  socketOnError,
   socketOnRide,
   socketOnNotification,
-  // socketOnNotificationHistory,
   socketEmitNotification
 } from '@/services/socket/Ride'
 import { useSocket } from '@/hooks/useSocket'
@@ -16,6 +14,8 @@ import { finishRide, getRideDetails } from '../services/api'
 import { IRideDetails } from '@/@types/rides'
 import { TScreen } from '@/@types/navigation'
 import { useAuth } from '@/hooks/useAuth'
+import Toast from 'react-native-toast-message'
+import * as Location from 'expo-location'
 
 
 export function useScreen(navParams: TScreen<'Home'>) {
@@ -23,6 +23,7 @@ export function useScreen(navParams: TScreen<'Home'>) {
 
   const [orderVisible, setOrderVisible] = useState<boolean>(false)
   const [orderInfos, setOrderInfos] = useState<IRideDetails>({} as IRideDetails)
+  const [status, requestPermission] = Location.useForegroundPermissions()
 
   const mapRef = useRef<MapView>(null)
 
@@ -65,11 +66,25 @@ export function useScreen(navParams: TScreen<'Home'>) {
     onUpdateFinishRide()
     await getUserPosition()
   }
+  async function requestUserPermissions() {
+    const response = await requestPermission()
+
+    if (response.granted) {
+      await getInitialInfos()
+    }
+  }
 
   function onUpdateMap(origem: ILocation, destino: ILocation) {
     mapRef.current?.fitToCoordinates([origem, destino], {
       edgePadding: { top: 100, right: 100, bottom: 100, left: 100 },
       animated: true
+    })
+  }
+  function onSocketNotification(data: { message: string}) {
+    Toast.show({
+      type: 'info',
+      text1: 'Atenção',
+      text2: data.message
     })
   }
 
@@ -79,27 +94,22 @@ export function useScreen(navParams: TScreen<'Home'>) {
   useEffect(() => {
     if (socket) {
       socketOnRide(socket, onSocketRide)
-      socketOnNotification(socket, (data) => {
-        console.log('NOTIFICATION ====>', data)
-      })
-      // socketOnNotificationHistory(socket, (data) => {
-      //   console.log('NOTIFICATION HISTORY ====>', data)
-      // })
-      socketOnError(socket, (data) => {
-        console.log('SOCKET ERROR ====>', data)
-      })
+      socketOnNotification(socket, onSocketNotification)
       socketEmitNotification(socket, { user_id: user.id, role: user.role })
     }
   }, [socket, isConnected])
 
   return {
+    requestUserPermissions,
     handleOrderVisible,
     getUserPosition,
+    getInitialInfos,
     toggleDrawer,
     onUpdateMap,
     onFinish,
     route,
     mapRef,
+    status,
     orderInfos,
     rideCoords,
     isRideActive,

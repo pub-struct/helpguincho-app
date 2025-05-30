@@ -4,9 +4,6 @@ import { Routes } from '@/routes'
 import { StatusBar } from 'expo-status-bar'
 import { useFonts } from 'expo-font'
 import * as SplashScreen from 'expo-splash-screen'
-import { useCallback } from 'react'
-import { View } from 'react-native'
-import { Text } from '@/components/Text'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import { RideProvider } from '@/context/RideContext'
 import { registerGlobalErrorHandler } from '@/services/errors/registerGlobalErrorHandler'
@@ -14,8 +11,8 @@ import { ErrorBoundary } from '@/components/Error/ErrorBoundary'
 import { SocketProvider } from '@/context/SocketContext'
 
 
+SplashScreen.preventAutoHideAsync()
 registerGlobalErrorHandler()
-// SplashScreen.preventAutoHideAsync()
 SplashScreen.setOptions({
   duration: 100,
   fade: true,
@@ -23,7 +20,7 @@ SplashScreen.setOptions({
 
 
 export default function App() {
-  const [fontsLoaded, fontsError] = useFonts({
+  const [fontsLoaded] = useFonts({
     Lexend_100: require('./src/assets/fonts/Lexend-Thin.ttf'),
     Lexend_200: require('./src/assets/fonts/Lexend-ExtraLight.ttf'),
     Lexend_300: require('./src/assets/fonts/Lexend-Light.ttf'),
@@ -35,28 +32,21 @@ export default function App() {
     Lexend_900: require('./src/assets/fonts/Lexend-Black.ttf'),
   })
 
-  const onLayoutRootView = useCallback(async () => {
-    if (fontsLoaded) {
-      await SplashScreen.hideAsync()
-    }
-  }, [fontsLoaded, fontsError])
-  // console.log('FONTS -->', fontsLoaded)
-  if (fontsError) {
-    return (
-      <View>
-        <Text>ALGO DEU ERRADO</Text>
-      </View>
-    )
-  }
+  // const onLayoutRootView = useCallback(async () => {
+  //   if (fontsLoaded) {
+  //     await SplashScreen.hideAsync()
+  //   }
+  // }, [fontsLoaded, fontsError])
+  // // console.log('FONTS -->', fontsLoaded)
 
   return (
     <ErrorBoundary>
       <GestureHandlerRootView>
-        <AuthProvider>
+        <AuthProvider fontsLoaded={fontsLoaded}>
           <RideProvider>
             <SocketProvider>
               <StatusBar style="auto" animated />
-              <Routes onLayout={onLayoutRootView} />
+              <Routes />
             </SocketProvider>
           </RideProvider>
         </AuthProvider>

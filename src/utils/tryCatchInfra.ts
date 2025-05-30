@@ -22,11 +22,11 @@ export async function tryCatchInfra<T>(params: IParams<T>): Promise<T> {
   } catch (error) {
     if (isAxiosError<ValidationError>(error)) {
       const contextAxios = {
-        url: error.request.responseURL,
+        url: `${error.config?.baseURL ?? ''}${error.config?.url ?? ''}`,
         status: error.request.status
       }
       const message = getAxiosMessage(error)
-
+      // console.log('AUTH ==>', JSON.stringify(error.request, null, 2))
       throw new InfraError({
         titleMessage,
         message: message,

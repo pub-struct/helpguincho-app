@@ -11,7 +11,6 @@ import { yupResolver } from '@hookform/resolvers/yup'
 import { schema } from '../schema'
 import { handleErrors } from '@/services/errors/ErrorHandler'
 import { useState } from 'react'
-import { storageSetToken } from '@/services/storage/Auth'
 import { login } from '../services/api'
 
 
@@ -22,7 +21,7 @@ export function Login() {
     resolver: yupResolver(schema)
   })
 
-  const { onUpdateAuth, onUpdateUser } = useAuth()
+  const { onAuthenticate, onUpdateUser } = useAuth()
 
   const { SVGS } = IMAGES
 
@@ -30,10 +29,9 @@ export function Login() {
     try {
       setIsLoading(true)
       const response = await login(data)
-
-      await storageSetToken(response.token)
+      // console.log('TOKEN API =====>', response.token)
       onUpdateUser(response.factoryData)
-      onUpdateAuth(response.token)
+      await onAuthenticate(response.token)
     } catch (error) {
       handleErrors(error)
     } finally {

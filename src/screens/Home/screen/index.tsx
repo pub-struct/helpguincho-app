@@ -10,10 +10,12 @@ import { MaterialCommunityIcons } from '@expo/vector-icons'
 import { TScreen } from '@/@types/navigation'
 import { styles } from './styles'
 import { useScreen } from './useScreen'
+import { Text } from '@/components/Text'
 
 
 export function Home(navParams: TScreen<'Home'>) {
   const {
+    requestUserPermissions,
     handleOrderVisible,
     getUserPosition,
     toggleDrawer,
@@ -21,12 +23,24 @@ export function Home(navParams: TScreen<'Home'>) {
     onFinish,
     route,
     mapRef,
+    status,
     orderInfos,
     rideCoords,
     isRideActive,
     orderVisible,
     userLocation,
   } = useScreen(navParams)
+
+  if (!status || !status.granted) {
+    return (
+      <SafeArea>
+        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+          <Text>Autorize o uso do GPS para utilizar o app</Text>
+          <Button title='Solicitar permissão' onPress={requestUserPermissions} />
+        </View>
+      </SafeArea>
+    )
+  }
 
   if (!userLocation) {
     return (

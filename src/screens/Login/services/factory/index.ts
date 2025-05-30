@@ -47,6 +47,6 @@ export function factoryLogin(data: IUserLoginDTO): IResponseAPIFactory {
       cnh: data.cnh || '',
       phone: data.phone || '',
     },
-    token: data.token
+    token: data.token || 'none'
   } satisfies IResponseAPIFactory
 }

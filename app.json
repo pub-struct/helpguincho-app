@@ -20,7 +20,7 @@
       },
       "bundleIdentifier": "com.supergrabber.helpguincho",
       "config": {
-        "googleMapsApiKey": "AIzaSyACjE76yJNuAdQ6cnY1ZEl1k2soEEZIhek"
+        "googleMapsApiKey": "process.env.EXPO_PUBLIC_GOOGLE_API_KEY"
       }
     },
     "android": {
@@ -36,7 +36,7 @@
       "package": "com.supergrabber.helpguincho",
       "config": {
         "googleMaps": {
-          "apiKey": "AIzaSyACjE76yJNuAdQ6cnY1ZEl1k2soEEZIhek"
+          "apiKey": "process.env.EXPO_PUBLIC_GOOGLE_API_KEY"
         }
       }
     },
