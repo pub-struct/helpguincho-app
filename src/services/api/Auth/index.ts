@@ -23,7 +23,6 @@ export async function tryLogin(data: object) {
 
 export async function tryValidateAccessToken(token: string) {
   const url = '/auth/session/'
-  console.log('TOKEN DEVIDE ===>', token)
 
   const response = await tryCatchInfra({
     fn: () => API.post<IUserLoginDTO>(url, undefined, {

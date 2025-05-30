@@ -58,8 +58,8 @@ export function History() {
     </View>
   ), [])
   const ListFooterComponent = useCallback(() => (
-    isLoading ? <ActivityIndicator size={50} color={COLORS.PRIMARY} /> : null
-  ), [isLoading])
+    isLoadingFirst ? null : isLoading ? <ActivityIndicator size={50} color={COLORS.PRIMARY} /> : null
+  ), [isLoading, isLoadingFirst])
 
   useEffect(() => {
     getInitialInfos()
@@ -84,7 +84,7 @@ export function History() {
 
       <FlatList
         data={history}
-        keyExtractor={(item, index) => item.id.toString() + index}
+        keyExtractor={(item) => item.id.toString()}
         contentContainerStyle={{ flexGrow: 1, padding: 20 }}
         renderItem={renderItem}
         ListEmptyComponent={ListEmptyComponent}

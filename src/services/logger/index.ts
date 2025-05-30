@@ -24,19 +24,20 @@ export async function loggerErrors(error: BaseError, context: ErrorMetadata) {
   // const username = (await storageAuthGet()).username
 
   // const UUID = randomUUID()
+  const bar = '-------------------------------------------------------------------------------------------'
 
   if (__DEV__) {
     console.error(
-      '\n-------------------------------------------------------------------------------------------' +
-      '\n-------------------------------------------------------------------------------------------' +
+      '\n' + bar +
+      '\n' + bar +
       '\n⛔ ' + colorTerminal('TITLE MSG', 33) + ' ==> ' + titleMessage +
       '\n🔴 ' + colorTerminal('ERROR MSG', 33) + ' ==> ' + errorMessage +
-      '\n🔴 ' + colorTerminal('ORIGINAL ERROR MSG', 33) + ' ==> ' + errorMessageOriginal +
+      '\n❌ ' + colorTerminal('ORIGINAL ERROR MSG', 33) + ' ==> ' + errorMessageOriginal +
       '\n📝 ' + colorTerminal('CONTEXT', 33) + ' ==> ' + contextMessage +
       '\n📢 ' + colorTerminal('STACK TRACE', 33) + ' ==> ' + stackTrace +
       // '\n📢 ' + colorTerminal('STACK TRACE ORIGINAL', 33) + ' ==> ' + error.stack +
-      '\n-------------------------------------------------------------------------------------------' +
-      '\n-------------------------------------------------------------------------------------------\n'
+      '\n' + bar +
+      '\n' + bar + '\n\n'
     )
   }
 
