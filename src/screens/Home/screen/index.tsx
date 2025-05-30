@@ -1,5 +1,5 @@
 import { View, StyleSheet, ActivityIndicator } from 'react-native'
-import MapView, { Marker, Polyline, PROVIDER_GOOGLE } from 'react-native-maps'
+import MapView, { Marker, Polyline, PROVIDER_DEFAULT, PROVIDER_GOOGLE } from 'react-native-maps'
 import { SafeArea } from '@/components/SafeArea'
 import { Header } from '../fragments/Header'
 import { FloatCardStart } from '../fragments/FloatCardStart'
@@ -11,7 +11,6 @@ import { TScreen } from '@/@types/navigation'
 import { styles } from './styles'
 import { useScreen } from './useScreen'
 import { Text } from '@/components/Text'
-
 
 export function Home(navParams: TScreen<'Home'>) {
   const {
@@ -36,7 +35,7 @@ export function Home(navParams: TScreen<'Home'>) {
       <SafeArea>
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
           <Text>Autorize o uso do GPS para utilizar o app</Text>
-          <Button title='Solicitar permissão' onPress={requestUserPermissions} />
+          <Button title="Solicitar permissão" onPress={requestUserPermissions} />
         </View>
       </SafeArea>
     )
@@ -54,7 +53,7 @@ export function Home(navParams: TScreen<'Home'>) {
     <View style={{ flex: 1 }}>
       <MapView
         ref={mapRef}
-        provider={PROVIDER_GOOGLE}
+        provider={PROVIDER_DEFAULT}
         style={{ flex: 1, ...StyleSheet.absoluteFillObject }}
         initialRegion={{
           latitude: userLocation ? userLocation.latitude : 0,
@@ -75,13 +74,7 @@ export function Home(navParams: TScreen<'Home'>) {
           />
         )}
 
-        {route.length > 0 && (
-          <Polyline
-            coordinates={route}
-            strokeWidth={4}
-            strokeColor="blue"
-          />
-        )}
+        {route.length > 0 && <Polyline coordinates={route} strokeWidth={4} strokeColor="blue" />}
       </MapView>
 
       <SafeArea>
@@ -94,20 +87,10 @@ export function Home(navParams: TScreen<'Home'>) {
         {/* <Button title='TESTE' onPress={onTestRide} /> */}
         {!isRideActive && <FloatCardStart />}
 
-        {isRideActive && (
-          <StartGPS
-            onUpdateMap={onUpdateMap}
-            onFinish={onFinish}
-          />
-        )}
+        {isRideActive && <StartGPS onUpdateMap={onUpdateMap} onFinish={onFinish} />}
       </SafeArea>
 
-      <OrderModal
-        visible={orderVisible}
-        onClose={handleOrderVisible}
-        onUpdateMap={onUpdateMap}
-        {...orderInfos}
-      />
+      <OrderModal visible={orderVisible} onClose={handleOrderVisible} onUpdateMap={onUpdateMap} {...orderInfos} />
     </View>
   )
 }
