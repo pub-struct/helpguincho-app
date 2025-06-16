@@ -14,6 +14,7 @@ import { finishRide, getRideDetails } from '../services/api'
 import { IRideDetails } from '@/@types/rides'
 import { TScreen } from '@/@types/navigation'
 import { useAuth } from '@/hooks/useAuth'
+import { useNotifications } from '@/hooks/useNotifications'
 import Toast from 'react-native-toast-message'
 import * as Location from 'expo-location'
 
@@ -29,6 +30,7 @@ export function useScreen(navParams: TScreen<'Home'>) {
 
   const { socket, isConnected } = useSocket()
   const { user } = useAuth()
+  const { pushToken, setBadgeCount } = useNotifications()
   const {
     eventListenerUserLocation,
     onUpdateFinishRide,

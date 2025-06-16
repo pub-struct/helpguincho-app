@@ -16,11 +16,19 @@
       "supportsTablet": false,
       "infoPlist": {
         "NSLocationWhenInUseUsageDescription": "Precisamos da sua localização para exibir o mapa corretamente.",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "Precisamos da sua localização para rastrear corridas e mostrar sua posição no mapa.",
+        "NSLocationAlwaysUsageDescription": "Precisamos da sua localização para rastrear corridas mesmo quando o app está em segundo plano.",
+        "NSCameraUsageDescription": "Precisamos do acesso à câmera para você tirar fotos das corridas.",
+        "NSPhotoLibraryUsageDescription": "Precisamos do acesso à galeria para você selecionar fotos das corridas.",
+        "NSUserNotificationsUsageDescription": "Precisamos enviar notificações sobre novas corridas e atualizações.",
         "ITSAppUsesNonExemptEncryption": false
       },
       "bundleIdentifier": "com.supergrabber.helpguincho",
       "config": {
         "googleMapsApiKey": "process.env.EXPO_PUBLIC_GOOGLE_API_KEY"
+      },
+      "entitlements": {
+        "aps-environment": "production"
       }
     },
     "android": {
@@ -55,6 +63,16 @@
         "expo-location",
         {
           "locationAlwaysAndWhenInUsePermission": "Allow $(PRODUCT_NAME) to use your location."
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/icon.png",
+          "color": "#FFCC00",
+          "defaultChannel": "default",
+          "sounds": ["./assets/notification-sound.wav"],
+          "mode": "production"
         }
       ]
     ],

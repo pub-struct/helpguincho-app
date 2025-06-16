@@ -9,6 +9,7 @@ import { RideProvider } from '@/context/RideContext'
 import { registerGlobalErrorHandler } from '@/services/errors/registerGlobalErrorHandler'
 import { ErrorBoundary } from '@/components/Error/ErrorBoundary'
 import { SocketProvider } from '@/context/SocketContext'
+import { NotificationProvider } from '@/context/NotificationContext'
 
 
 SplashScreen.preventAutoHideAsync()
@@ -43,12 +44,14 @@ export default function App() {
     <ErrorBoundary>
       <GestureHandlerRootView>
         <AuthProvider fontsLoaded={fontsLoaded}>
-          <RideProvider>
-            <SocketProvider>
-              <StatusBar style="auto" animated />
-              <Routes />
-            </SocketProvider>
-          </RideProvider>
+          <NotificationProvider>
+            <RideProvider>
+              <SocketProvider>
+                <StatusBar style="auto" animated />
+                <Routes />
+              </SocketProvider>
+            </RideProvider>
+          </NotificationProvider>
         </AuthProvider>
       </GestureHandlerRootView>
     </ErrorBoundary>
