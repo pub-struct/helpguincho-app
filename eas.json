@@ -9,13 +9,23 @@
       "distribution": "internal",
       "ios": {
         "simulator": true
-      }
-    },
+      },
+      "env": {
+        "EXPO_PUBLIC_BASE_URL": "https://api.help-guincho.co",
+        "EXPO_PUBLIC_BASE_URL_SOCKET": "wss://api.help-guincho.co",
+        "EXPO_PUBLIC_GOOGLE_API_KEY": "AIzaSyACjE76yJNuAdQ6cnY1ZEl1k2soEEZIhek"
+         }
+        },
     "preview": {
       "distribution": "internal"
     },
     "production": {
-      "autoIncrement": true
+      "autoIncrement": true,
+      "env": {
+        "EXPO_PUBLIC_BASE_URL": "https://api.help-guincho.co",
+        "EXPO_PUBLIC_BASE_URL_SOCKET": "wss://api.help-guincho.co",
+        "EXPO_PUBLIC_GOOGLE_API_KEY": "AIzaSyACjE76yJNuAdQ6cnY1ZEl1k2soEEZIhek"
+      }
     }
   },
   "submit": {
