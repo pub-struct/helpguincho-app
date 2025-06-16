@@ -11,8 +11,8 @@
         "simulator": true
       },
       "env": {
-        "EXPO_PUBLIC_BASE_URL": "https://api.help-guincho.co/api/v1",
-        "EXPO_PUBLIC_BASE_URL_SOCKET": "https://api.help-guincho.co",
+        "EXPO_PUBLIC_BASE_URL": "http://tunneling.miguer.com/api/v1",
+        "EXPO_PUBLIC_BASE_URL_SOCKET": "http://tunneling.miguer.com",
         "EXPO_PUBLIC_GOOGLE_API_KEY": "AIzaSyACjE76yJNuAdQ6cnY1ZEl1k2soEEZIhek"
          }
         },
