@@ -45,7 +45,7 @@ export class NotificationService {
           allowCriticalAlerts: false,
           provideAppNotificationSettings: true,
           allowProvisional: false,
-          allowAnnouncements: false,
+        
         },
       })
       finalStatus = status
@@ -160,7 +160,7 @@ export class NotificationService {
         priority: Notifications.AndroidNotificationPriority.HIGH,
         categoryIdentifier: 'ride-notification',
       },
-      trigger: seconds > 0 ? { seconds } : null,
+      trigger: seconds > 0 ? { type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL, seconds } : null,
     })
   }
 
