@@ -71,7 +71,7 @@
           "icon": "./assets/icon.png",
           "color": "#FFCC00",
           "defaultChannel": "default",
-          "sounds": ["./assets/notification-sound.mp3"],
+          "sounds": ["./assets/notify.mp3"],
           "mode": "production"
         }
       ]
