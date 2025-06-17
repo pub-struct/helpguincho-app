@@ -23,7 +23,7 @@
         "NSUserNotificationsUsageDescription": "Precisamos enviar notificações sobre novas corridas e atualizações.",
         "ITSAppUsesNonExemptEncryption": false
       },
-      "bundleIdentifier": "rs.pubstruct.helpguincho",
+      "bundleIdentifier": "rs.pubstruct.app.helpguincho",
       "config": {
         "googleMapsApiKey": "process.env.EXPO_PUBLIC_GOOGLE_API_KEY"
       },
@@ -44,7 +44,7 @@
         "android.permission.ACCESS_COARSE_LOCATION",
         "android.permission.ACCESS_FINE_LOCATION"
       ],
-      "package": "rs.pubstruct.helpguincho",
+      "package": "rs.pubstruct.app.helpguincho",
       "config": {
         "googleMaps": {
           "apiKey": "process.env.EXPO_PUBLIC_GOOGLE_API_KEY"
@@ -72,11 +72,18 @@
           "icon": "./assets/icon.png",
           "color": "#FFCC00",
           "defaultChannel": "default",
-          "sounds": ["./assets/notify.mp3"],
+          "sounds": [
+            "./assets/notify.mp3"
+          ],
           "mode": "production"
         }
       ]
     ],
-    "owner": "pub-struct"
+    "owner": "pub-struct",
+    "extra": {
+      "eas": {
+        "projectId": "91d16096-8976-4cda-9c0f-b8abd4e766bd"
+      }
+    }
   }
 }
