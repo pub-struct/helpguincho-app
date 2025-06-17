@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "236850048043",
+    "project_id": "helpguincho-9067f",
+    "storage_bucket": "helpguincho-9067f.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:236850048043:android:a374622f8bbd8dccf44e6e",
+        "android_client_info": {
+          "package_name": "rs.pubstruct.helpguincho"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAxCyn3szAO3p0647pDOwJydH5bypuE1Ro"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
