@@ -23,7 +23,7 @@
         "NSUserNotificationsUsageDescription": "Precisamos enviar notificações sobre novas corridas e atualizações.",
         "ITSAppUsesNonExemptEncryption": false
       },
-      "bundleIdentifier": "com.supergrabber.helpguincho",
+      "bundleIdentifier": "rs.pubstruct.helpguincho",
       "config": {
         "googleMapsApiKey": "process.env.EXPO_PUBLIC_GOOGLE_API_KEY"
       },
