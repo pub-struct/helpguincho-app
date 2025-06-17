@@ -77,11 +77,6 @@
         }
       ]
     ],
-    "extra": {
-      "eas": {
-        "projectId": "9d5678ec-d179-448b-b3db-aca915317964"
-      }
-    },
     "owner": "pub-struct"
   }
 }
