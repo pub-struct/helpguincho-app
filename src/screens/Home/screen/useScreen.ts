@@ -30,7 +30,7 @@ export function useScreen(navParams: TScreen<'Home'>) {
 
   const { socket, isConnected } = useSocket()
   const { user } = useAuth()
-  const { pushToken, setBadgeCount } = useNotifications()
+  const { pushToken, setBadgeCount, registerForNotifications, isNotificationEnabled } = useNotifications()
   const {
     eventListenerUserLocation,
     onUpdateFinishRide,
@@ -90,6 +90,27 @@ export function useScreen(navParams: TScreen<'Home'>) {
     })
   }
 
+  async function onRequestNotifications() {
+    try {
+      console.log('🔔 Bell button clicked - requesting notifications...')
+      await registerForNotifications()
+      Toast.show({
+        type: 'success',
+        text1: 'Notificações',
+        text2: 'Notificações ativadas com sucesso!',
+        visibilityTime: 3000,
+      })
+    } catch (error) {
+      console.error('❌ Error in onRequestNotifications:', error)
+      Toast.show({
+        type: 'error',
+        text1: 'Erro',
+        text2: 'Falha ao ativar notificações',
+        visibilityTime: 3000,
+      })
+    }
+  }
+
   useEffect(() => {
     eventListenerUserLocation()
   }, [])
@@ -109,6 +130,7 @@ export function useScreen(navParams: TScreen<'Home'>) {
     toggleDrawer,
     onUpdateMap,
     onFinish,
+    onRequestNotifications,
     route,
     mapRef,
     status,
@@ -117,5 +139,6 @@ export function useScreen(navParams: TScreen<'Home'>) {
     isRideActive,
     orderVisible,
     userLocation,
+    isNotificationEnabled,
   }
 }

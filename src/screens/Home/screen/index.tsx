@@ -21,6 +21,7 @@ export function Home(navParams: TScreen<'Home'>) {
     toggleDrawer,
     onUpdateMap,
     onFinish,
+    onRequestNotifications,
     route,
     mapRef,
     status,
@@ -29,6 +30,7 @@ export function Home(navParams: TScreen<'Home'>) {
     isRideActive,
     orderVisible,
     userLocation,
+    isNotificationEnabled,
   } = useScreen(navParams)
 
   if (!status || !status.granted) {
@@ -85,7 +87,11 @@ export function Home(navParams: TScreen<'Home'>) {
       </MapView>
 
       <SafeArea>
-        <Header onOpenDrawer={toggleDrawer} />
+        <Header
+          onOpenDrawer={toggleDrawer}
+          onRequestNotifications={onRequestNotifications}
+          isNotificationEnabled={isNotificationEnabled}
+        />
 
         <Button style={styles.centerGPS} onPress={getUserPosition}>
           <MaterialCommunityIcons name="target" size={25} color="black" />

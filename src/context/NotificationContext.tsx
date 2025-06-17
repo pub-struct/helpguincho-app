@@ -4,7 +4,6 @@ import * as Notifications from 'expo-notifications'
 import { NotificationService, IPushNotificationData } from '@/services/notifications/NotificationService'
 import { useAuth } from '@/hooks/useAuth'
 import { Vibrate } from '@/utils/vibrate'
-import { storageGetToken } from '@/services/storage/Auth'
 import Toast from 'react-native-toast-message'
 
 interface INotificationContext {
@@ -32,13 +31,13 @@ interface INotificationProvider {
 export function NotificationProvider({ children }: INotificationProvider) {
   const [pushToken, setPushToken] = useState<string | null>(null)
   const [isNotificationEnabled, setIsNotificationEnabled] = useState(false)
-  const { user } = useAuth()
+  const { user, isAuthenticated } = useAuth()
 
   /**
    * Handle notification received while app is in foreground
    */
   const handleNotificationReceived = (notification: Notifications.Notification) => {
-    const data = notification.request.content.data as IPushNotificationData
+    const data = notification.request.content.data as unknown as IPushNotificationData
 
     console.log('📩 Notification received:', notification)
 
@@ -47,15 +46,15 @@ export function NotificationProvider({ children }: INotificationProvider) {
 
     // Show toast notification
     Toast.show({
-      type: data.type === 'new_ride' ? 'success' : 'info',
-      text1: notification.request.content.title || 'Nova Notificação',
-      text2: notification.request.content.body,
+      type: data?.type === 'new_ride' ? 'success' : 'info',
+      text1: notification.request.content.title ?? 'Nova Notificação',
+      text2: notification.request.content.body ?? '',
       visibilityTime: 5000,
       swipeable: true,
     })
 
     // Handle specific notification types
-    if (data.type === 'new_ride') {
+    if (data?.type === 'new_ride') {
       // Additional handling for new ride notifications
       console.log('🚗 New ride notification received:', data.rideId)
     }
@@ -65,12 +64,12 @@ export function NotificationProvider({ children }: INotificationProvider) {
    * Handle notification tap (when user taps on notification)
    */
   const handleNotificationResponse = (response: Notifications.NotificationResponse) => {
-    const data = response.notification.request.content.data as IPushNotificationData
+    const data = response.notification.request.content.data as unknown as IPushNotificationData
 
     console.log('🔔 Notification tapped:', response)
 
     // Navigate based on notification type
-    if (data.type === 'new_ride' && data.rideId) {
+    if (data?.type === 'new_ride' && data?.rideId) {
       // You can add navigation logic here
       console.log('Navigating to ride:', data.rideId)
       // Example: navigation.navigate('RideDetails', { rideId: data.rideId })
@@ -82,8 +81,37 @@ export function NotificationProvider({ children }: INotificationProvider) {
  */
   const registerForNotifications = async () => {
     try {
+      // Only register if user is authenticated
+      if (isAuthenticated !== 'LOGGED' || !user) {
+        console.warn('⚠️  Cannot register for notifications: user not authenticated')
+        setIsNotificationEnabled(false)
+        return
+      }
+
+      console.log('🚀 Starting notification registration...')
+
       // Configure notification channels first (Android)
       await NotificationService.configureNotificationChannels()
+
+      // First, explicitly request permissions (this should show the dialog)
+      const permissionResult = await NotificationService.requestNotificationPermissions()
+      console.log('🔐 Permission result:', permissionResult)
+
+      if (!permissionResult.granted) {
+        console.warn('❌ Notification permissions denied')
+        setIsNotificationEnabled(false)
+
+        // Show user-friendly message
+        Toast.show({
+          type: 'error',
+          text1: 'Permissões Negadas',
+          text2: Platform.OS === 'ios'
+            ? 'Ative as notificações em Ajustes > Notificações > HelpGuincho'
+            : 'Ative as notificações nas configurações do app',
+          visibilityTime: 5000,
+        })
+        return
+      }
 
       // Register for push notifications
       const token = await NotificationService.registerForPushNotifications()
@@ -93,8 +121,19 @@ export function NotificationProvider({ children }: INotificationProvider) {
         setIsNotificationEnabled(true)
 
         // Send token to backend
-        const authToken = await storageGetToken()
-        const result = await NotificationService.sendTokenToBackend(token, user.id, user.role, authToken)
+        console.log('🌐 Sending token to backend. User:', user?.id, 'Auth status:', isAuthenticated)
+
+        // Test if other authenticated endpoints work
+        try {
+          console.log('🧪 Testing auth with user profile endpoint...')
+          const { tryGetUserProfile } = await import('@/services/api/User')
+          await tryGetUserProfile()
+          console.log('✅ User profile endpoint works - auth is OK')
+        } catch (error) {
+          console.log('❌ User profile endpoint also fails:', error)
+        }
+
+        const result = await NotificationService.sendTokenToBackend(token)
 
         if (result?.success) {
           console.log('✅ Push notifications registered successfully:', result.message)
@@ -107,19 +146,23 @@ export function NotificationProvider({ children }: INotificationProvider) {
         console.warn('⚠️  Push notification registration failed - no token or user')
         setIsNotificationEnabled(false)
 
-        // Show user-friendly message for iOS
-        if (Platform.OS === 'ios') {
-          Toast.show({
-            type: 'info',
-            text1: 'Notificações Desabilitadas',
-            text2: 'Para receber notificações, ative-as em Ajustes > Notificações > HelpGuincho',
-            visibilityTime: 6000,
-          })
-        }
+        Toast.show({
+          type: 'error',
+          text1: 'Erro',
+          text2: 'Falha ao obter token de notificação',
+          visibilityTime: 3000,
+        })
       }
     } catch (error) {
       console.error('❌ Failed to register for push notifications:', error)
       setIsNotificationEnabled(false)
+
+      Toast.show({
+        type: 'error',
+        text1: 'Erro',
+        text2: 'Falha ao configurar notificações',
+        visibilityTime: 3000,
+      })
     }
   }
 
@@ -154,16 +197,22 @@ export function NotificationProvider({ children }: INotificationProvider) {
       handleNotificationResponse
     )
 
-    // Auto-register for notifications when user is available
-    if (user && !pushToken) {
+    // Auto-register for notifications only when user is authenticated and logged in
+    if (user && isAuthenticated === 'LOGGED' && !pushToken) {
       registerForNotifications()
+    }
+
+    // Clear notification state when user logs out
+    if (isAuthenticated === 'UNLOGGED') {
+      setPushToken(null)
+      setIsNotificationEnabled(false)
     }
 
     return () => {
       notificationListener.remove()
       responseListener.remove()
     }
-  }, [user])
+  }, [user, isAuthenticated])
 
   const value: INotificationContext = {
     pushToken,
